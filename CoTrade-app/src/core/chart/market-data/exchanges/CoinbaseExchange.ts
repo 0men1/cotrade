@@ -1,5 +1,5 @@
-import { TickerData } from "@/types/market-data/data";
 import { ExchangeAdapter } from "../ExchangeAdapter";
+import { TickData } from "../types";
 
 export class CoinbaseExchange extends ExchangeAdapter {
     constructor() {
@@ -25,7 +25,7 @@ export class CoinbaseExchange extends ExchangeAdapter {
         };
     }
 
-    parseTickerMessage(data: any): TickerData | null {
+    parseTickerMessage(data: any): TickData | null {
         if (data.type !== 'ticker' || !data.price || !data.product_id) {
             return null;
         }
