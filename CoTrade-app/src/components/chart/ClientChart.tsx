@@ -1,0 +1,75 @@
+'use client';
+
+import { useEffect, useRef } from 'react';
+import { useCandleChart } from './hooks/useCandleChart';
+import { AppProvider, AppState, useApp } from './context';
+import ChartHeader from './ChartHeader';
+import Toolbox from './ToolBox';
+import CollabStatus from './CollabStatus';
+import { DrawingEditor } from './DrawingEditor';
+import Settings from './Settings';
+
+export interface ClientProps {
+    roomId?: string;
+    initialState?: Partial<AppState>;
+}
+
+export default function ClientChart({ roomId, initialState }: ClientProps) {
+    return (
+        <AppProvider roomId={roomId} initialState={initialState}>
+            <ProvideConsumer />
+        </AppProvider>
+    );
+}
+
+function ProvideConsumer() {
+    const chartContainerRef = useRef<HTMLDivElement>(null);
+    const { state, action } = useApp();
+    const { chart, series } = useCandleChart(chartContainerRef);
+
+    useEffect(() => {
+        const cleanup = () => {
+            action.cleanupState();
+        };
+        window.addEventListener('beforeunload', cleanup);
+        return () => {
+            window.removeEventListener('beforeunload', cleanup);
+        };
+    }, [action]);
+
+    // Show loading UI for collaborative mode
+    if (state.collaboration.isLoading && state.collaboration.room.id) {
+        return (
+            <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-800 justify-center items-center">
+                <div className="text-lg font-semibold text-gray-700 dark:text-gray-200">
+                    Loading chart state...
+                </div>
+                <div className="mt-4">
+                    {/* Replace with your preferred spinner component */}
+                    <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-800">
+            <main className="flex-1 flex flex-col overflow-hidden">
+                <div className="w-full">
+                    <ChartHeader />
+                </div>
+                <div className="flex flex-1 w-full overflow-hidden relative">
+                    <Toolbox chart={chart} series={series} />
+                    <div className="flex-1 relative">
+                        <div ref={chartContainerRef} className="w-full h-full" />
+                    </div>
+                    <div className="absolute top-4 right-4 z-10">
+                        <DrawingEditor />
+                    </div>
+                </div>
+                <CollabStatus />
+                <Settings />
+            </main>
+        </div>
+    );
+}
