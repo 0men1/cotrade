@@ -43,12 +43,8 @@ export function useCandleChart(
 
     const interval = INTERVALMs[timeframe];
 
-    console.log("Interval: ", interval)
-
     const updateChart = useCallback((tick: TickData) => {
         if (!seriesRef.current) return;
-
-        console.log("NEW CANDLE TICK")
 
         const rounded = Math.floor(tick.timestamp / interval) * interval;
 
@@ -82,12 +78,10 @@ export function useCandleChart(
 
     const setupTickConnection = useCallback(async () => {
         try {
-            console.log("Setting up Tick Connection")
             if (connectionState?.status !== ConnectionStatus.CONNECTED) {
                 unsubscribeTickData.current = await subscribeToTicks(symbol, exchange, updateChart);
                 unsubscribeStatusListener.current = await subscribeToStatus(exchange, setConnectionState);
             }
-            console.log("Tick data connected")
         } catch (error) {
             console.error("failed to fetch tick data: ", error)
         }
@@ -213,7 +207,6 @@ export function useCandleChart(
 
                 if (logicalRange?.from < 10) {
                     const additionalBars = 50;
-                    console.log("Loading historical data");
                     loadHistoricalCandles(candleCache.current.size + additionalBars)
                 }
             })

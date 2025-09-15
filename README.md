@@ -9,7 +9,8 @@ Requirements
 
 
 PROBLEM DISCOVERY:
-- Starting a collab session locks the host in loading mode 
+- When in collab mode, refreshing the page forces all clients to go back to default state (sol-usd 1m)
+- Object is disposed error when drawing and then changing charts or refreshing
 
 
 # 📈 CoTrade - Collaborative Financial Charting Platform

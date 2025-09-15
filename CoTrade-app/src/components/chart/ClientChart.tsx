@@ -27,6 +27,10 @@ function ProvideConsumer() {
     const { state, action } = useApp();
     const { chart, series } = useCandleChart(chartContainerRef);
 
+    const { isLoading, id } = state.collaboration.room;
+
+    console.log("Loading?: ", isLoading)
+
     useEffect(() => {
         const cleanup = () => {
             action.cleanupState();
@@ -38,7 +42,7 @@ function ProvideConsumer() {
     }, [action]);
 
     // Show loading UI for collaborative mode
-    if (state.collaboration.room.isLoading && state.collaboration.room.id) {
+    if (isLoading && id) {
         return (
             <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-800 justify-center items-center">
                 <div className="text-lg font-semibold text-gray-700 dark:text-gray-200">

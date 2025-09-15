@@ -13,7 +13,6 @@ export type Action =
     | { type: "LEAVE_COLLAB_ROOM", payload: null }
     | { type: "END_LOADING", payload: null }
 
-
     // -----------DRAWING LOGIC----------
     | { type: "ADD_DRAWING", payload: { drawing: SerializedDrawing } }
     | { type: "DELETE_DRAWING", payload: { drawing: SerializedDrawing } }
@@ -21,6 +20,7 @@ export type Action =
     | { type: "START_TOOL", payload: { tool: DrawingTool, handler: BaseDrawingHandler } }
     | { type: "CANCEL_TOOL", payload: null }
 
+    // -----------CHART LOGIC----------
     | { type: "SELECT_CHART", payload: { symbol: string, timeframe: IntervalKey, exchange: string } }
     | { type: "TOGGLE_SETTINGS", payload: { state: boolean } }
     | { type: "TOGGLE_COLLAB_WINDOW", payload: { state: boolean } }

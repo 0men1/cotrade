@@ -180,6 +180,7 @@ export const AppProvider: React.FC<{
             wsRef.current.onopen = () => {
                 console.log("Socket connection open")
                 action.joinCollabRoom({ roomId, displayName: state.collaboration.displayName })
+                dispatch({ type: "END_LOADING", payload: null })
             }
 
             wsRef.current.onmessage = (event: MessageEvent) => {
