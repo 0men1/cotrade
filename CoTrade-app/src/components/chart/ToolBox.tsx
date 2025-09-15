@@ -29,7 +29,7 @@ const Toolbox: React.FC<ToolboxProps> = ({ chart, series }) => {
         return () => {
             window.removeEventListener("keydown", handleEscape);
         }
-    }, [activeTool]);
+    }, [activeTool, action]);
 
     function setTool(tool: DrawingTool) {
         if (!chart || !series) return;

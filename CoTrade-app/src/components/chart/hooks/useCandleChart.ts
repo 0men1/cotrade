@@ -38,13 +38,17 @@ export function useCandleChart(
     const currentCandle = useRef<Candlestick>(null);
     const lastTime = useRef<number>(0);
     const [connectionState, setConnectionState] = useState<ConnectionState | null>(null)
-    let unsubscribeTickData: (() => void) | null = null;
-    let unsubscribeStatusListener: (() => void) | null = null;
+    const unsubscribeTickData = useRef<(() => void)>(null);
+    const unsubscribeStatusListener = useRef<(() => void)>(null);
 
     const interval = INTERVALMs[timeframe];
 
+    console.log("Interval: ", interval)
+
     const updateChart = useCallback((tick: TickData) => {
         if (!seriesRef.current) return;
+
+        console.log("NEW CANDLE TICK")
 
         const rounded = Math.floor(tick.timestamp / interval) * interval;
 
@@ -52,7 +56,7 @@ export function useCandleChart(
 
         if (existingCandle) {
             existingCandle.high = Math.max(existingCandle.high, tick.price);
-            existingCandle.low = Math.max(existingCandle.low, tick.price);
+            existingCandle.low = Math.min(existingCandle.low, tick.price);
             existingCandle.close = tick.price;
             existingCandle.volume = tick.volume;
 
@@ -78,23 +82,34 @@ export function useCandleChart(
 
     const setupTickConnection = useCallback(async () => {
         try {
+            console.log("Setting up Tick Connection")
             if (connectionState?.status !== ConnectionStatus.CONNECTED) {
-                unsubscribeTickData = await subscribeToTicks(symbol, exchange, updateChart);
-                unsubscribeStatusListener = await subscribeToStatus(exchange, setConnectionState);
+                unsubscribeTickData.current = await subscribeToTicks(symbol, exchange, updateChart);
+                unsubscribeStatusListener.current = await subscribeToStatus(exchange, setConnectionState);
             }
+            console.log("Tick data connected")
         } catch (error) {
             console.error("failed to fetch tick data: ", error)
         }
-    }, [symbol, timeframe])
-
-    useEffect(() => {
-        candleCache.current.clear();
-    }, [symbol, timeframe])
-
+    }, [symbol, exchange])
 
     useEffect(() => {
         setupTickConnection();
-    }, [symbol, exchange])
+        return () => {
+            if (unsubscribeStatusListener.current) {
+                unsubscribeStatusListener.current();
+            }
+            if (unsubscribeTickData.current) {
+                unsubscribeTickData.current();
+            }
+        }
+    }, [symbol, exchange, setupTickConnection])
+
+    useEffect(() => {
+        candleCache.current.clear();
+    }, [symbol, exchange, timeframe])
+
+
 
     const loadHistoricalCandles = useCallback(async (numBars: number) => {
         try {
@@ -116,7 +131,7 @@ export function useCandleChart(
         } catch (error) {
             console.error(`Error fetching candles: `, error)
         }
-    }, [symbol, exchange, timeframe])
+    }, [symbol, timeframe])
 
     const safeCleanup = useCallback(() => {
         try {
@@ -130,9 +145,13 @@ export function useCandleChart(
             if (chartRef.current) {
                 chartRef.current.remove();
             }
-            if (unsubscribeTickData && unsubscribeStatusListener) {
-                unsubscribeTickData();
-                unsubscribeStatusListener();
+            if (unsubscribeTickData.current) {
+                unsubscribeTickData.current();
+                unsubscribeTickData.current = null;
+            }
+            if (unsubscribeStatusListener.current) {
+                unsubscribeStatusListener.current();
+                unsubscribeStatusListener.current = null;
             }
         } catch (error) {
             console.error('Error during chart cleanup:', error);
@@ -140,9 +159,8 @@ export function useCandleChart(
             chartRef.current = null;
             seriesRef.current = null;
             setChartInitialized(false);
-            candleCache.current.clear()
         }
-    }, [containerRef]);
+    }, [containerRef, unsubscribeStatusListener, unsubscribeTickData]);
 
     useEffect(() => {
         safeCleanup();
@@ -187,8 +205,6 @@ export function useCandleChart(
                 wickDownColor: state.chart.settings.candles.wickDownColor,
             });
 
-
-
             chartRef.current = chart;
             seriesRef.current = series;
 
@@ -197,6 +213,7 @@ export function useCandleChart(
 
                 if (logicalRange?.from < 10) {
                     const additionalBars = 50;
+                    console.log("Loading historical data");
                     loadHistoricalCandles(candleCache.current.size + additionalBars)
                 }
             })
@@ -212,6 +229,8 @@ export function useCandleChart(
             resizeObserverRef.current = resizeObserver;
             resizeObserver.observe(containerRef.current);
 
+            loadHistoricalCandles(200);
+
             return () => {
                 safeCleanup();
             };
@@ -222,7 +241,6 @@ export function useCandleChart(
 
     }, [
         symbol,
-        timeframe,
         timeframe,
         safeCleanup,
         loadHistoricalCandles,
