@@ -1,19 +1,13 @@
 'use client'
 
 import { useEffect, useRef } from 'react';
-import { IChartApi, ISeriesApi, SeriesType, MouseEventParams, Coordinate } from 'lightweight-charts';
+import { MouseEventParams, Coordinate } from 'lightweight-charts';
 import { AppState, useApp } from '@/components/chart/Context';
 import { BaseDrawing } from '@/core/chart/drawings/primitives/BaseDrawing';
 import { setCursor } from '@/core/chart/cursor';
 import { SerializedDrawing } from '@/core/chart/drawings/types';
 import { TrendLine } from '@/core/chart/drawings/primitives/TrendLine';
 import { VertLine } from '@/core/chart/drawings/primitives/VertLine';
-
-type useChartInteractionsParams = {
-    chart: IChartApi,
-    series: ISeriesApi<SeriesType>,
-    containerRef: HTMLDivElement,
-}
 
 export function restoreDrawing(drawing: SerializedDrawing): BaseDrawing | null {
     try {
@@ -26,7 +20,6 @@ export function restoreDrawing(drawing: SerializedDrawing): BaseDrawing | null {
             case "VertLine":
                 restoredDrawing = new VertLine(drawing.points, drawing.options, drawing.id)
                 break;
-
         }
         if (restoredDrawing) {
             return restoredDrawing;
@@ -37,12 +30,11 @@ export function restoreDrawing(drawing: SerializedDrawing): BaseDrawing | null {
     return null;
 }
 
-export function useChartInteractions({
-    chart,
-    series,
-    containerRef,
-}: useChartInteractionsParams) {
+export function useChartInteractions() {
     const { state, action } = useApp();
+
+    const { chartApi, seriesApi, container } = state.chart;
+
     const stateRef = useRef<AppState>(state);
     const drawingRef = useRef<Map<string, BaseDrawing>>(new Map());
 
@@ -51,14 +43,14 @@ export function useChartInteractions({
     }, [state]);
 
     useEffect(() => {
-        if (!series) return;
+        if (!seriesApi) return;
 
         const currentDrawings = drawingRef.current;
         const serializedDrawings = state.chart.drawings.collection;
 
         for (const drawing of currentDrawings.values()) {
             try {
-                series.detachPrimitive(drawing);
+                seriesApi.detachPrimitive(drawing);
             } catch (error) {
                 console.error("failed to detach drawing: ", error);
                 return;
@@ -69,7 +61,7 @@ export function useChartInteractions({
         for (const drawing of serializedDrawings) {
             const restoredDrawing = restoreDrawing(drawing);
             if (restoredDrawing) {
-                series.attachPrimitive(restoredDrawing)
+                seriesApi.attachPrimitive(restoredDrawing)
                 currentDrawings.set(drawing.id, restoredDrawing)
             }
         }
@@ -77,14 +69,14 @@ export function useChartInteractions({
         // return () => {
         //     for (const drawing of currentDrawings.values()) {
         //         try {
-        //             series.detachPrimitive(drawing);
+        //             seriesApi.detachPrimitive(drawing);
         //         } catch (error) {
         //             console.error("failed to detach drawing: ", error)
         //         }
         //     }
         //     currentDrawings.clear();
         // }
-    }, [state.chart.drawings.collection, series, chart])
+    }, [state.chart.drawings.collection, seriesApi, chartApi])
 
     function hitTest(x: Coordinate, y: Coordinate): BaseDrawing | null {
         if (drawingRef.current)
@@ -95,7 +87,7 @@ export function useChartInteractions({
     }
 
     useEffect(() => {
-        if (!chart || !series || !containerRef) return;
+        if (!chartApi || !seriesApi || !container) return;
 
         const mouseClickHandler = (param: MouseEventParams) => {
             if (!param.point) return;
@@ -126,12 +118,12 @@ export function useChartInteractions({
             setCursor(hoveredDrawing ? 'pointer' : 'default')
         };
 
-        chart.subscribeClick(mouseClickHandler);
-        chart.subscribeCrosshairMove(mouseMoveHandler);
+        chartApi.subscribeClick(mouseClickHandler);
+        chartApi.subscribeCrosshairMove(mouseMoveHandler);
 
         return () => {
-            chart.unsubscribeClick(mouseClickHandler);
-            chart.unsubscribeCrosshairMove(mouseMoveHandler);
+            chartApi.unsubscribeClick(mouseClickHandler);
+            chartApi.unsubscribeCrosshairMove(mouseMoveHandler);
         };
-    }, [chart, series, containerRef, action]);
+    }, [chartApi, seriesApi, container, action]);
 }

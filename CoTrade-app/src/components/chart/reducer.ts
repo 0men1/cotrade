@@ -2,6 +2,7 @@ import { BaseDrawingHandler, DrawingTool, SerializedDrawing } from "@/core/chart
 import { ExchangeType, IntervalKey } from "@/core/chart/market-data/types";
 import { BaseDrawing } from "@/core/chart/drawings/primitives/BaseDrawing";
 import { AppState, ChartSettings } from "./Context";
+import { IChartApi, ISeriesApi, SeriesType } from "lightweight-charts";
 
 export type Action =
     // -----------ROOM LOGIC----------
@@ -26,6 +27,7 @@ export type Action =
     | { type: "TOGGLE_COLLAB_WINDOW", payload: { state: boolean } }
     | { type: "UPDATE_SETTINGS", payload: { settings: ChartSettings } }
     | { type: "CLEANUP_STATE", payload: null }
+    | { type: "INITIALIZE_API", payload: { chartApi: IChartApi, seriesApi: ISeriesApi<SeriesType>, container: HTMLDivElement } }
 
 
 function mergeDrawings(local: SerializedDrawing[], incoming: SerializedDrawing[]): SerializedDrawing[] {
@@ -269,6 +271,18 @@ export function Reducer(state: AppState, action: Action): AppState {
                     settings: {
                         ...action.payload.settings
                     }
+                }
+            }
+        }
+
+        case "INITIALIZE_API": {
+            return {
+                ...state,
+                chart: {
+                    ...state.chart,
+                    chartApi: action.payload.chartApi,
+                    seriesApi: action.payload.seriesApi,
+                    container: action.payload.container
                 }
             }
         }

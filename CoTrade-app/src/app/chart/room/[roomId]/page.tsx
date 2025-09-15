@@ -27,8 +27,6 @@ export default function ChartCollabRoom(
             setInitialState(getInitialState());
         }
         setIsLoaded(true);
-
-        console.log("Initial State: ", initialState);
     }, [roomId, isHost])
 
     if (!roomId) {

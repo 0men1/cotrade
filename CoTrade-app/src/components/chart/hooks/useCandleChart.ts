@@ -10,7 +10,6 @@ import {
     UTCTimestamp,
 } from "lightweight-charts";
 import { ThemeConfig } from "@/constants/theme";
-import { useChartInteractions } from "./useChartInteractions";
 import { Candlestick, ConnectionState, ConnectionStatus, INTERVALMs, TickData } from "@/core/chart/market-data/types";
 import { useApp } from "@/components/chart/Context";
 import { subscribeToTicks, subscribeToStatus } from "@/core/chart/market-data/tick-data";
@@ -240,11 +239,11 @@ export function useCandleChart(
     ]);
 
 
-    useChartInteractions({
-        chart: chartRef.current!,
-        series: seriesRef.current!,
-        containerRef: containerRef.current!,
-    });
+    // useChartInteractions({
+    //     chart: chartRef.current!,
+    //     series: seriesRef.current!,
+    //     containerRef: containerRef.current!,
+    // });
 
     useEffect(() => {
         if (!chartRef.current) return;

@@ -4,8 +4,8 @@ import { createContext, useContext, useEffect, useMemo, useReducer, useRef } fro
 import { BaseDrawing } from "@/core/chart/drawings/primitives/BaseDrawing";
 import { DrawingTool, BaseDrawingHandler, SerializedDrawing } from "@/core/chart/drawings/types";
 import { ExchangeType, IntervalKey } from "@/core/chart/market-data/types";
-import { CrosshairMode } from "lightweight-charts";
-import { LocalStorage } from "@/lib/localStorage";
+import { CrosshairMode, IChartApi, ISeriesApi, SeriesType } from "lightweight-charts";
+import { LocalStorage, saveAppState } from "@/lib/localStorage";
 import { Action, Reducer } from "./Reducer";
 
 export interface ChartSettings {
@@ -44,6 +44,9 @@ export interface AppState {
     };
     chart: {
         id: string;
+        chartApi: IChartApi | null,
+        seriesApi: ISeriesApi<SeriesType> | null,
+        container: HTMLDivElement | null,
         tools: {
             activeTool: DrawingTool | null,
             activeHandler: BaseDrawingHandler | null,
@@ -76,6 +79,9 @@ export const defaultAppState: AppState = {
     },
     chart: {
         id: "SOL-USD:coinbase",
+        chartApi: null,
+        seriesApi: null,
+        container: null,
         drawings: {
             collection: [],
             selected: null
@@ -134,6 +140,7 @@ interface AppContextType {
         cancelTool: () => void;
 
         selectChart: (symbol: string, timeframe: IntervalKey, exchange: string) => void;
+        initializeApi: (chartApi: IChartApi, seriesApi: ISeriesApi<SeriesType>, container: HTMLDivElement) => void;
 
         toggleSettings: (state: boolean) => void;
         updateSettings: (settings: ChartSettings) => void;
@@ -168,7 +175,7 @@ export const AppProvider: React.FC<{
         if (state.chart.tools.activeTool || state.chart.tools.activeHandler || state.chart.drawings.selected) {
             return;
         }
-        LocalStorage.setItem("AppState", state);
+        saveAppState(state);
     }, [state])
 
     useEffect(() => {
@@ -320,6 +327,10 @@ export const AppProvider: React.FC<{
             }
             dispatch(act)
             wsRef.current?.send(JSON.stringify(act))
+        },
+
+        initializeApi: (chartApi: IChartApi, seriesApi: ISeriesApi<SeriesType>, container: HTMLDivElement) => {
+            dispatch({ type: "INITIALIZE_API", payload: { chartApi, seriesApi, container } })
         },
 
         toggleSettings: (state: boolean) => {

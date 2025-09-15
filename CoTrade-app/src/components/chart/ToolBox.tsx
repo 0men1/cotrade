@@ -2,20 +2,19 @@
 
 import { useEffect } from "react";
 import { MoveDiagonal, MoveUp } from "lucide-react";
-import { IChartApi, ISeriesApi, SeriesType } from "lightweight-charts";
 import { DrawingHandlerFactory } from "@/core/chart/drawings/DrawingHandlerFactory";
 import { Button } from "../ui/button";
 import { DrawingTool } from "@/core/chart/drawings/types";
 import { useApp } from "./Context";
+import { useChartInteractions } from "./hooks/useChartInteractions";
 
-interface ToolboxProps {
-    chart: IChartApi | null;
-    series: ISeriesApi<SeriesType> | null;
-}
-
-const Toolbox: React.FC<ToolboxProps> = ({ chart, series }) => {
+function Toolbox() {
     const { state, action } = useApp();
+    const { chartApi, seriesApi } = state.chart;
+
     const { activeTool } = state.chart.tools
+
+    useChartInteractions();
 
     useEffect(() => {
         const handleEscape = (e: KeyboardEvent) => {
@@ -32,14 +31,14 @@ const Toolbox: React.FC<ToolboxProps> = ({ chart, series }) => {
     }, [activeTool, action]);
 
     function setTool(tool: DrawingTool) {
-        if (!chart || !series) return;
+        if (!chartApi || !seriesApi) return;
 
         if (tool === activeTool) {
             action.cancelTool()
             return;
         }
 
-        const handlerFactory = new DrawingHandlerFactory(chart, series);
+        const handlerFactory = new DrawingHandlerFactory(chartApi, seriesApi);
 
         try {
             const handler = handlerFactory.createHandler(tool);

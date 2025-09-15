@@ -24,12 +24,17 @@ export default function ClientChart({ roomId, initialState }: ClientProps) {
 
 function ProvideConsumer() {
     const chartContainerRef = useRef<HTMLDivElement>(null);
-    const { state, action } = useApp();
     const { chart, series } = useCandleChart(chartContainerRef);
+    const { state, action } = useApp();
+
+    useEffect(() => {
+        if (chart && series && chartContainerRef.current) {
+            action.initializeApi(chart, series, chartContainerRef.current);
+        }
+    }, [chart, series, chartContainerRef.current])
+
 
     const { isLoading, id } = state.collaboration.room;
-
-    console.log("Loading?: ", isLoading)
 
     useEffect(() => {
         const cleanup = () => {
@@ -56,6 +61,17 @@ function ProvideConsumer() {
         );
     }
 
+    // if (!state.chart.chartApi || !state.chart.seriesApi || !state.chart.container) {
+    //     console.log(chart, series, chartContainerRef)
+    //     return (
+    //         <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-800 justify-center items-center">
+    //             <div className="text-lg font-semibold text-gray-700 dark:text-gray-200">
+    //                 Initializing chart...
+    //             </div>
+    //         </div>
+    //     );
+    // }
+
     return (
         <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-800">
             <main className="flex-1 flex flex-col overflow-hidden">
@@ -63,7 +79,7 @@ function ProvideConsumer() {
                     <ChartHeader />
                 </div>
                 <div className="flex flex-1 w-full overflow-hidden relative">
-                    <Toolbox chart={chart} series={series} />
+                    <Toolbox />
                     <div className="flex-1 relative">
                         <div ref={chartContainerRef} className="w-full h-full" />
                     </div>

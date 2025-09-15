@@ -1,3 +1,5 @@
+import { AppState } from "@/components/chart/Context";
+
 export class LocalStorage {
     static setItem(key: string, value: any) {
         try {
@@ -33,4 +35,32 @@ export class LocalStorage {
             console.error("error: failed to clear localStorage, ", error)
         }
     }
+}
+
+
+export function saveAppState(state: AppState) {
+    const savedState = {
+        collaboration: {
+            displayName: state.collaboration.displayName,
+            room: {
+                ...state.collaboration.room
+            }
+        },
+        chart: {
+            id: state.chart.id,
+            tools: state.chart.tools,
+            drawings: {
+                ...state.chart.drawings,
+            },
+            settings: {
+                ...state.chart.settings
+            },
+            cursor: state.chart.cursor,
+            data: {
+                ...state.chart.data,
+            },
+        }
+    }
+
+    LocalStorage.setItem("AppState", savedState);
 }

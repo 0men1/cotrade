@@ -101,7 +101,7 @@ export default function CollabStatus() {
                                 >
                                     <rect x="6" y="6" width="12" height="12" />
                                 </svg>
-                                Stop Session
+                                Exit Session
                             </button>
                         </div>
                     </div>
