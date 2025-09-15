@@ -1,7 +1,7 @@
 'use client'
 
 import ClientChart from "@/components/chart/ClientChart";
-import { AppState, defaultAppState } from "@/components/chart/context";
+import { AppState, defaultAppState } from "@/components/chart/Context";
 import { LocalStorage } from "@/lib/localStorage";
 import { useEffect, useState } from "react";
 

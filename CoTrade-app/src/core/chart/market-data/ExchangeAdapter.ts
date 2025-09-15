@@ -1,12 +1,15 @@
 import { ExchangeConfig, ConnectionStatus, TickData, ConnectionState } from "./types";
 
 export abstract class ExchangeAdapter {
-    protected ws: WebSocket | null = null;
-    protected subscriptions = new Map<string, Set<(data: TickData) => void>>();
-    protected stateListeners = new Set<(state: ConnectionState) => void>();
-    protected reconnectAttempts = 0;
-    protected reconnectTimeout: NodeJS.Timeout | null = null;
-    protected isManuallyDisconnected = false;
+    private ws: WebSocket | null = null;
+
+    private subscriptions = new Map<string, Set<(data: TickData) => void>>();
+    private stateListeners = new Set<(status: ConnectionState) => void>();
+
+    private reconnectAttempts = 0;
+    private reconnectTimeout: NodeJS.Timeout | null = null;
+
+    private isManuallyDisconnected = false;
 
     constructor(protected config: ExchangeConfig) { }
 
@@ -18,13 +21,13 @@ export abstract class ExchangeAdapter {
         if (this.isManuallyDisconnected) return;
 
         this.cleanup();
-        this.notifyStatus({ state: ConnectionStatus.CONNECTING })
+        this.notifyStatus({ status: ConnectionStatus.CONNECTING })
 
         try {
             this.ws = new WebSocket(this.config.wsUrl);
             this.setupEventHandlers();
         } catch (error) {
-            this.handleError("Failed to create WebSocket connection");
+            this.handleError(`failed to create WebSocket connection: ${error}`);
         }
     }
 
@@ -33,7 +36,7 @@ export abstract class ExchangeAdapter {
         this.cleanup();
         this.ws?.close();
         this.ws = null;
-        this.notifyStatus({ state: ConnectionStatus.DISCONNECTED });
+        this.notifyStatus({ status: ConnectionStatus.DISCONNECTED });
     }
 
     subscribe(symbol: string, onTick: (data: TickData) => void): () => void {
@@ -58,7 +61,7 @@ export abstract class ExchangeAdapter {
         }
     }
 
-    onStatusChange(callback: (state: ConnectionState) => void): () => void {
+    onStatusChange(callback: (status: ConnectionState) => void): () => void {
         this.stateListeners.add(callback);
         return () => this.stateListeners.delete(callback);
     }
@@ -68,7 +71,7 @@ export abstract class ExchangeAdapter {
 
         this.ws.onopen = () => {
             this.reconnectAttempts = 0;
-            this.notifyStatus({ state: ConnectionStatus.CONNECTED });
+            this.notifyStatus({ status: ConnectionStatus.CONNECTED });
 
             const symbols = Array.from(this.subscriptions.keys());
             if (symbols.length > 0) {
@@ -82,10 +85,6 @@ export abstract class ExchangeAdapter {
                 const tickerData = this.parseTickerMessage(data);
 
                 if (tickerData) {
-                    this.notifyStatus({
-                        state: ConnectionStatus.CONNECTED,
-                        lastDataTime: Date.now()
-                    });
 
                     const handlers = this.subscriptions.get(tickerData.symbol);
                     handlers?.forEach(handler => handler(tickerData));
@@ -134,7 +133,7 @@ export abstract class ExchangeAdapter {
         }
 
         this.reconnectAttempts++;
-        this.notifyStatus({ state: ConnectionStatus.RECONNECTING });
+        this.notifyStatus({ status: ConnectionStatus.RECONNECTING });
 
         const initialDelay = this.config.reconnectConfig?.initialDelay ?? 10;
         const maxDelay = this.config.reconnectConfig?.maxDelay ?? 30000;
@@ -151,12 +150,12 @@ export abstract class ExchangeAdapter {
     }
 
     private handleError(error: string): void {
-        this.notifyStatus({ state: ConnectionStatus.ERROR, error })
+        this.notifyStatus({ status: ConnectionStatus.ERROR, error })
     }
 
     private notifyStatus(status: Partial<ConnectionState>): void {
         const fullStatus: ConnectionState = {
-            state: ConnectionStatus.DISCONNECTED,
+            status: ConnectionStatus.DISCONNECTED,
             exchange: this.config.name,
             reconnectAttempts: this.reconnectAttempts,
             ...status

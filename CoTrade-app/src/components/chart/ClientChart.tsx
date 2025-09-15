@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useCandleChart } from './hooks/useCandleChart';
-import { AppProvider, AppState, useApp } from './context';
+import { AppProvider, AppState, useApp } from './Context';
 import ChartHeader from './ChartHeader';
 import Toolbox from './ToolBox';
 import CollabStatus from './CollabStatus';
@@ -38,7 +38,7 @@ function ProvideConsumer() {
     }, [action]);
 
     // Show loading UI for collaborative mode
-    if (state.collaboration.isLoading && state.collaboration.room.id) {
+    if (state.collaboration.room.isLoading && state.collaboration.room.id) {
         return (
             <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-800 justify-center items-center">
                 <div className="text-lg font-semibold text-gray-700 dark:text-gray-200">

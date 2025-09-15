@@ -1,7 +1,7 @@
 'use client'
 
 import ClientChart from "@/components/chart/ClientChart";
-import { AppState, defaultAppState } from "@/components/chart/context";
+import { AppState, defaultAppState } from "@/components/chart/Context";
 import { use, useEffect, useState } from "react";
 import { getInitialState } from "../../page";
 import { useSearchParams } from "next/navigation";

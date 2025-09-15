@@ -1,5 +1,5 @@
 import { CanvasRenderingTarget2D } from 'fancy-canvas';
-import { IChartApi, ISeriesApi, IPrimitivePaneRenderer, IPrimitivePaneView, Logical, SeriesType, Coordinate } from 'lightweight-charts';
+import { IChartApi, ISeriesApi, IPrimitivePaneRenderer, IPrimitivePaneView, SeriesType, Coordinate } from 'lightweight-charts';
 import { BaseDrawing } from './BaseDrawing';
 import { GeometryUtils } from './GeometryUtils';
 import { drawControlPoints } from './ControlPoints';
@@ -195,7 +195,7 @@ export class TrendLineHandler implements BaseDrawingHandler {
         this._collectedPoints = [];
     }
 
-    onClick(x: Coordinate, y: Coordinate, logical: Logical): BaseDrawing | null {
+    onClick(x: Coordinate, y: Coordinate): BaseDrawing | null {
         try {
             const timePoint = this._chart.timeScale().coordinateToTime(x);
             if (!timePoint) return null;
@@ -216,7 +216,7 @@ export class TrendLineHandler implements BaseDrawingHandler {
 
             return null;
         } catch (error) {
-            console.error("failed to create trendline")
+            console.error("failed to create trendline: ", error)
             return null;
         }
     }

@@ -34,6 +34,7 @@ export abstract class BaseDrawing implements ISeriesPrimitive<Time>, ISerializab
             type: this.constructor.name,
             points: this._points,
             options: { ...this._options },
+            isDeleted: false,
         }
     }
 
@@ -150,7 +151,7 @@ export abstract class BaseDrawing implements ISeriesPrimitive<Time>, ISerializab
         return this._series;
     }
 
-    get options(): any {
+    get options(): BaseOptions {
         return this._options;
     }
 

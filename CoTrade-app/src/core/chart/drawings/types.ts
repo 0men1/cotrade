@@ -1,10 +1,10 @@
-import { Coordinate, Logical } from "lightweight-charts";
+import { Coordinate } from "lightweight-charts";
 import { BaseDrawing } from "@/core/chart/drawings/primitives/BaseDrawing";
 import { Point } from "@/core/chart/types";
 
 export interface BaseDrawingHandler {
     onStart(): void;
-    onClick(x: Coordinate, y: Coordinate, logical: Logical): BaseDrawing | null;
+    onClick(x: Coordinate, y: Coordinate): BaseDrawing | null;
     onCancel(): void;
 }
 

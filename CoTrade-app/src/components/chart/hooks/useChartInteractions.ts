@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { IChartApi, ISeriesApi, SeriesType, MouseEventParams, Coordinate } from 'lightweight-charts';
-import { AppState, useApp } from '../context';
+import { AppState, useApp } from '@/components/chart/Context';
 import { BaseDrawing } from '@/core/chart/drawings/primitives/BaseDrawing';
 import { setCursor } from '@/core/chart/cursor';
 import { SerializedDrawing } from '@/core/chart/drawings/types';
@@ -17,7 +17,7 @@ type useChartInteractionsParams = {
 
 export function restoreDrawing(drawing: SerializedDrawing): BaseDrawing | null {
     try {
-        var restoredDrawing: BaseDrawing | null = null;
+        let restoredDrawing: BaseDrawing | null = null;
         switch (drawing.type) {
             case "TrendLine":
                 restoredDrawing = new TrendLine(drawing.points, drawing.options, drawing.id);
@@ -32,7 +32,7 @@ export function restoreDrawing(drawing: SerializedDrawing): BaseDrawing | null {
             return restoredDrawing;
         }
     } catch (error) {
-        console.error(`Failed to restore drawing ${drawing.id}`)
+        console.error(`failed to restore drawing ${drawing.id}: `, error)
     }
     return null;
 }
@@ -101,7 +101,7 @@ export function useChartInteractions({
             if (!param.point) return;
             const { tools, drawings } = stateRef.current.chart;
             if (tools.activeHandler && param.logical !== undefined) {
-                const drawing = tools.activeHandler?.onClick(param.point.x, param.point.y, param.logical);
+                const drawing = tools.activeHandler?.onClick(param.point.x, param.point.y);
                 if (drawing) {
                     action.addDrawing(drawing);
                 }
@@ -133,5 +133,5 @@ export function useChartInteractions({
             chart.unsubscribeClick(mouseClickHandler);
             chart.unsubscribeCrosshairMove(mouseMoveHandler);
         };
-    }, [chart, series, containerRef]);
+    }, [chart, series, containerRef, action]);
 }

@@ -1,17 +1,17 @@
 import { BaseDrawingHandler, DrawingTool, SerializedDrawing } from "@/core/chart/drawings/types";
-import { IntervalKey } from "@/core/chart/market-data/types";
-import { AppState, ChartSettings } from "./context";
+import { ExchangeType, IntervalKey } from "@/core/chart/market-data/types";
 import { BaseDrawing } from "@/core/chart/drawings/primitives/BaseDrawing";
+import { AppState, ChartSettings } from "./Context";
 
 export type Action =
     // -----------ROOM LOGIC----------
-    | { type: "CREATE_COLLAB_ROOM", payload: {} }
+    | { type: "CREATE_COLLAB_ROOM", payload: null }
     | { type: "USER_JOINED", payload: { displayName: string } }
     | { type: "USER_LEFT", payload: { displayName: string } }
     | { type: "SYNC_FULL_STATE", payload: { state: AppState } }
     | { type: "JOIN_COLLAB_ROOM", payload: { room: { roomId: string | null, displayName: string } } }
-    | { type: "LEAVE_COLLAB_ROOM", payload: {} }
-    | { type: "END_LOADING", payload: {} }
+    | { type: "LEAVE_COLLAB_ROOM", payload: null }
+    | { type: "END_LOADING", payload: null }
 
 
     // -----------DRAWING LOGIC----------
@@ -19,13 +19,13 @@ export type Action =
     | { type: "DELETE_DRAWING", payload: { drawing: SerializedDrawing } }
     | { type: "SELECT_DRAWING", payload: { drawing: BaseDrawing | null } }
     | { type: "START_TOOL", payload: { tool: DrawingTool, handler: BaseDrawingHandler } }
-    | { type: "CANCEL_TOOL", payload: {} }
+    | { type: "CANCEL_TOOL", payload: null }
 
     | { type: "SELECT_CHART", payload: { symbol: string, timeframe: IntervalKey, exchange: string } }
     | { type: "TOGGLE_SETTINGS", payload: { state: boolean } }
     | { type: "TOGGLE_COLLAB_WINDOW", payload: { state: boolean } }
     | { type: "UPDATE_SETTINGS", payload: { settings: ChartSettings } }
-    | { type: "CLEANUP_STATE", payload: {} }
+    | { type: "CLEANUP_STATE", payload: null }
 
 
 function mergeDrawings(local: SerializedDrawing[], incoming: SerializedDrawing[]): SerializedDrawing[] {
@@ -75,7 +75,7 @@ export function deepMerge(target: any, source: any) {
     return target
 }
 
-export function reducer(state: AppState, action: Action): AppState {
+export function Reducer(state: AppState, action: Action): AppState {
     switch (action.type) {
         case "USER_JOINED": {
             return {
@@ -192,7 +192,7 @@ export function reducer(state: AppState, action: Action): AppState {
                         ...state.chart.data,
                         symbol: action.payload.symbol,
                         timeframe: action.payload.timeframe,
-                        exchange: action.payload.exchange
+                        exchange: action.payload.exchange as ExchangeType
                     }
                 }
             }

@@ -2,7 +2,7 @@ import { ChevronDown, Settings } from "lucide-react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { IntervalKey } from "@/core/chart/market-data/types";
-import { useApp } from "./context";
+import { useApp } from "./Context";
 
 export default function ChartHeader() {
     const { state, action } = useApp();

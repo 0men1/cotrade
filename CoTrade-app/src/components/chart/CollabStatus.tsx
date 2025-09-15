@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from "next/navigation";
-import { useApp } from "./context"
+import { useApp } from "./Context"
 
 export default function CollabStatus() {
     const { state, action } = useApp();
@@ -28,7 +28,7 @@ export default function CollabStatus() {
                 router.push(`${result.url}?isHost=true`)
             }
         } catch (error) {
-            console.error("error: failed to parse response")
+            console.error("error: failed to parse response (", error, ")")
         }
     }
 
@@ -37,7 +37,7 @@ export default function CollabStatus() {
             action.exitCollabRoom();
             router.replace("/chart")
         } catch (error) {
-            console.error("error: failed to parse response")
+            console.error("error: failed to parse response (", error, ")");
         }
     }
 

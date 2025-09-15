@@ -6,6 +6,7 @@ export type Candlestick = {
     high: number,
     low: number,
     close: number,
+    volume?: number
 }
 
 export interface TickData {
@@ -42,14 +43,22 @@ export enum ConnectionStatus {
 }
 
 export interface ConnectionState {
-    state: ConnectionStatus;
+    status: ConnectionStatus;
     exchange: string;
     reconnectAttempts: number;
     lastDataTime?: number;
     error?: string;
 }
 
-export type ExchangeType = 'coinbase' | 'binance' | 'kraken'
+
+// export enum ExchangeType {
+//     coinbase,
+//     binance,
+//     kraken
+// }
+
+export type ExchangeType = "coinbase" | "binance" | "kraken"
+
 
 export type IntervalKey = '1m' | '5m' | '15m' | '1H' | '4H' | '1D' | '1W';
 

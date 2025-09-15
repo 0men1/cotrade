@@ -11,53 +11,94 @@ import {
 } from "lightweight-charts";
 import { ThemeConfig } from "@/constants/theme";
 import { useChartInteractions } from "./useChartInteractions";
-import { useCandleSocket } from "./useCandleSocket";
-import { Candlestick, INTERVALMs } from "@/core/chart/market-data/types";
-import { useApp } from "../context";
+import { Candlestick, ConnectionState, ConnectionStatus, INTERVALMs, TickData } from "@/core/chart/market-data/types";
+import { useApp } from "@/components/chart/Context";
+import { subscribeToTicks, subscribeToStatus } from "@/core/chart/market-data/tick-data";
 
 
 export async function fetchHistoricalCandles(ticker: string, timeframe: string, numBars: number): Promise<Candlestick[]> {
     const now = Math.floor(Date.now() / 1000);
-    const interval = INTERVALMs[timeframe];
-    const start = now - numBars * interval;
+    const start = now - numBars * INTERVALMs[timeframe];
     const url = `http://localhost:8080/candles?symbol=${ticker}&timeframe=${timeframe}&start=${start}&end=${now}`;
     const raw: number[][] = await fetch(url).then(res => res.json());
-    return raw.map(([time, low, high, open, close]) => ({ time: time as UTCTimestamp, open, high, low, close }));
+    return raw.map(([time, low, high, open, close, volume]) => ({ time: time as UTCTimestamp, open, high, low, close, volume }));
 }
 
 export function useCandleChart(
     containerRef: React.RefObject<HTMLDivElement | null>,
 ) {
-    const { state, action } = useApp();
-    const { symbol, timeframe } = state.chart.data
+    const { state } = useApp();
+    const { symbol, exchange, timeframe } = state.chart.data
     const chartRef = useRef<IChartApi | null>(null);
     const seriesRef = useRef<ISeriesApi<SeriesType> | null>(null);
     const resizeObserverRef = useRef<ResizeObserver | null>(null);
     const [chartInitialized, setChartInitialized] = useState(false);
 
     const candleCache = useRef<Map<number, Candlestick>>(new Map());
+    const currentCandle = useRef<Candlestick>(null);
+    const lastTime = useRef<number>(0);
+    const [connectionState, setConnectionState] = useState<ConnectionState | null>(null)
+    let unsubscribeTickData: (() => void) | null = null;
+    let unsubscribeStatusListener: (() => void) | null = null;
 
-    const normalizedTimeframe = timeframe || '1D';
+    const interval = INTERVALMs[timeframe];
 
-    const updateChart = useCallback((candle: Candlestick) => {
+    const updateChart = useCallback((tick: TickData) => {
         if (!seriesRef.current) return;
-        candleCache.current.set(candle.time, candle)
-        seriesRef.current.update({ ...candle, time: candle.time as UTCTimestamp });
-    }, []);
 
-    useCandleSocket(symbol, timeframe, updateChart);
+        const rounded = Math.floor(tick.timestamp / interval) * interval;
+
+        const existingCandle = candleCache.current.get(rounded);
+
+        if (existingCandle) {
+            existingCandle.high = Math.max(existingCandle.high, tick.price);
+            existingCandle.low = Math.max(existingCandle.low, tick.price);
+            existingCandle.close = tick.price;
+            existingCandle.volume = tick.volume;
+
+            currentCandle.current = existingCandle;
+            lastTime.current = rounded;
+        } else {
+            currentCandle.current = {
+                time: rounded as UTCTimestamp,
+                open: tick.price,
+                high: tick.price,
+                low: tick.price,
+                close: tick.price,
+                volume: tick.volume
+            }
+            lastTime.current = rounded;
+        }
+
+        seriesRef.current.update({
+            ...currentCandle.current,
+            time: currentCandle.current.time as UTCTimestamp
+        });
+    }, [interval]);
+
+    const setupTickConnection = useCallback(async () => {
+        try {
+            if (connectionState?.status !== ConnectionStatus.CONNECTED) {
+                unsubscribeTickData = await subscribeToTicks(symbol, exchange, updateChart);
+                unsubscribeStatusListener = await subscribeToStatus(exchange, setConnectionState);
+            }
+        } catch (error) {
+            console.error("failed to fetch tick data: ", error)
+        }
+    }, [symbol, timeframe])
 
     useEffect(() => {
         candleCache.current.clear();
     }, [symbol, timeframe])
 
+
+    useEffect(() => {
+        setupTickConnection();
+    }, [symbol, exchange])
+
     const loadHistoricalCandles = useCallback(async (numBars: number) => {
         try {
-            const candles = await fetchHistoricalCandles(
-                symbol,
-                timeframe,
-                numBars
-            )
+            const candles = await fetchHistoricalCandles(symbol, timeframe, numBars)
 
             candles.forEach(candle => {
                 candleCache.current.set(candle.time, candle);
@@ -75,7 +116,7 @@ export function useCandleChart(
         } catch (error) {
             console.error(`Error fetching candles: `, error)
         }
-    }, [symbol, timeframe])
+    }, [symbol, exchange, timeframe])
 
     const safeCleanup = useCallback(() => {
         try {
@@ -88,6 +129,10 @@ export function useCandleChart(
             }
             if (chartRef.current) {
                 chartRef.current.remove();
+            }
+            if (unsubscribeTickData && unsubscribeStatusListener) {
+                unsubscribeTickData();
+                unsubscribeStatusListener();
             }
         } catch (error) {
             console.error('Error during chart cleanup:', error);
@@ -115,10 +160,10 @@ export function useCandleChart(
                 },
                 timeScale: {
                     timeVisible: true,
-                    secondsVisible: normalizedTimeframe === '1m',
+                    secondsVisible: timeframe === '1m',
                     tickMarkFormatter: (time: number) => {
                         const date = new Date(time * 1000);
-                        return (normalizedTimeframe === '1D' || normalizedTimeframe === '1W')
+                        return (timeframe === '1D' || timeframe === '1W')
                             ? date.toLocaleDateString()
                             : date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
                     }
@@ -167,7 +212,6 @@ export function useCandleChart(
             resizeObserverRef.current = resizeObserver;
             resizeObserver.observe(containerRef.current);
 
-
             return () => {
                 safeCleanup();
             };
@@ -179,10 +223,11 @@ export function useCandleChart(
     }, [
         symbol,
         timeframe,
-        normalizedTimeframe,
+        timeframe,
         safeCleanup,
-        loadHistoricalCandles
+        loadHistoricalCandles,
     ]);
+
 
     useChartInteractions({
         chart: chartRef.current!,

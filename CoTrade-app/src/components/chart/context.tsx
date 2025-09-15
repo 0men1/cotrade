@@ -1,11 +1,12 @@
 'use client'
+
 import { createContext, useContext, useEffect, useMemo, useReducer, useRef } from "react";
 import { BaseDrawing } from "@/core/chart/drawings/primitives/BaseDrawing";
 import { DrawingTool, BaseDrawingHandler, SerializedDrawing } from "@/core/chart/drawings/types";
-import { IntervalKey } from "@/core/chart/market-data/types";
+import { ExchangeType, IntervalKey } from "@/core/chart/market-data/types";
 import { CrosshairMode } from "lightweight-charts";
-import { Action, reducer } from "./reducer";
 import { LocalStorage } from "@/lib/localStorage";
+import { Action, Reducer } from "./Reducer";
 
 export interface ChartSettings {
     isOpen: boolean
@@ -57,7 +58,7 @@ export interface AppState {
             style: string;
             symbol: string;
             timeframe: IntervalKey;
-            exchange: string;
+            exchange: ExchangeType;
         };
     }
 }
@@ -117,21 +118,27 @@ export const defaultAppState: AppState = {
 interface AppContextType {
     state: AppState;
     action: {
+        addDrawing: (drawing: BaseDrawing) => void;
+        deleteDrawing: (drawing: BaseDrawing) => void;
+        selectDrawing: (drawing: BaseDrawing | null) => void;
+
+        joinCollabRoom: (room: { roomId: string, displayName: string }) => void;
+        exitCollabRoom: () => void;
         userJoined: (displayName: string) => void;
         userLeft: (displayName: string) => void;
         sendFullState: () => void;
-        deleteDrawing: (drawing: BaseDrawing) => void;
+        handleIncomingAction: (incomingAction: Action) => void;
+        toggleCollabWindow: (state: boolean) => void;
+
         startTool: (tool: DrawingTool, handler: BaseDrawingHandler) => void;
         cancelTool: () => void;
+
         selectChart: (symbol: string, timeframe: IntervalKey, exchange: string) => void;
-        selectDrawing: (drawing: BaseDrawing | null) => void;
+
         toggleSettings: (state: boolean) => void;
-        toggleCollabWindow: (state: boolean) => void;
-        joinCollabRoom: (room: { roomId: string, displayName: string }) => void;
-        exitCollabRoom: () => void;
         updateSettings: (settings: ChartSettings) => void;
+
         cleanupState: () => void;
-        handleIncomingAction: (incomingAction: Action) => void;
     };
 }
 
@@ -142,7 +149,7 @@ export const AppProvider: React.FC<{
     roomId?: string;
     initialState?: Partial<AppState>;
 }> = ({ children, initialState, roomId }) => {
-    const [state, dispatch] = useReducer(reducer, {
+    const [state, dispatch] = useReducer(Reducer, {
         ...defaultAppState,
         ...initialState,
         collaboration: {
@@ -184,12 +191,12 @@ export const AppProvider: React.FC<{
             wsRef.current.onclose = () => {
                 console.log("Socket connection closed")
                 action.exitCollabRoom()
-                dispatch({ type: "END_LOADING", payload: {} })
+                dispatch({ type: "END_LOADING", payload: null })
             }
 
             wsRef.current.onerror = (error: Event) => {
                 console.log("socket connection error: ", error)
-                dispatch({ type: "END_LOADING", payload: {} })
+                dispatch({ type: "END_LOADING", payload: null })
             }
         }
 
@@ -236,7 +243,7 @@ export const AppProvider: React.FC<{
         },
 
         cancelTool: () => {
-            dispatch({ type: "CANCEL_TOOL", payload: {} })
+            dispatch({ type: "CANCEL_TOOL", payload: null })
         },
 
 
@@ -272,7 +279,7 @@ export const AppProvider: React.FC<{
         },
 
         exitCollabRoom: () => {
-            dispatch({ type: "LEAVE_COLLAB_ROOM", payload: {} })
+            dispatch({ type: "LEAVE_COLLAB_ROOM", payload: null })
             wsRef.current?.close()
         },
 
@@ -300,7 +307,6 @@ export const AppProvider: React.FC<{
         },
 
 
-
         // ----------------CHART FUNCTIONS-------------------
         selectChart: (symbol: string, timeframe: IntervalKey, exchange: string) => {
             const act: Action = {
@@ -324,11 +330,11 @@ export const AppProvider: React.FC<{
         },
 
         cleanupState: () => {
-            dispatch({ type: "CLEANUP_STATE", payload: {} })
+            dispatch({ type: "CLEANUP_STATE", payload: null })
         },
 
 
-    }), [])
+    }), [state])
 
     return (
         <AppContext.Provider value={{ state, action }}>
@@ -338,10 +344,10 @@ export const AppProvider: React.FC<{
 };
 
 export const useApp = () => {
-    const context = useContext(AppContext);
+    const Context = useContext(AppContext);
 
-    if (!context) {
+    if (!Context) {
         throw new Error("useApp must be used within AppProvider");
     }
-    return context;
+    return Context;
 }

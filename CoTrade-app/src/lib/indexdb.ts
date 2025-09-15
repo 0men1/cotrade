@@ -26,7 +26,7 @@ function initDatabase(): Promise<IDBDatabase> {
             resolve(db)
         }
 
-        request.onupgradeneeded = (e: IDBVersionChangeEvent) => {
+        request.onupgradeneeded = () => {
             const database = request.result;
 
             const store = database.createObjectStore(STORE_NAME, {
@@ -68,7 +68,7 @@ export async function setDrawings(chartId: string, drawings: SerializedDrawing[]
 
             request.onsuccess = () => {
                 console.log(`Drawing data for ${chartId} saved`)
-                resolve;
+                resolve();
             }
 
             request.onerror = () => {
@@ -95,7 +95,7 @@ export async function getDrawings(chartId: string): Promise<SerializedDrawing[]>
             const request = store.get(chartId);
 
             request.onsuccess = () => {
-                const result = request.result;
+               const result = request.result;
                 if (result && result.drawings) {
                     resolve(result.drawings);
                 } else {

@@ -6,7 +6,7 @@ import { Button } from "../ui/button";
 import { Switch } from "../ui/switch";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
-import { ChartSettings, useApp } from './context';
+import { ChartSettings, useApp } from './Context';
 
 export default function Settings() {
     const { state, action } = useApp();
@@ -19,7 +19,7 @@ export default function Settings() {
             const copy = JSON.parse(JSON.stringify(settings));
             setLocalSettings(copy);
         }
-    }, [settings.isOpen]);
+    }, [settings.isOpen, settings]);
 
     if (!settings.isOpen || !localSettings) return null;
 

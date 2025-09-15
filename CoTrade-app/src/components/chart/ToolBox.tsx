@@ -6,7 +6,7 @@ import { IChartApi, ISeriesApi, SeriesType } from "lightweight-charts";
 import { DrawingHandlerFactory } from "@/core/chart/drawings/DrawingHandlerFactory";
 import { Button } from "../ui/button";
 import { DrawingTool } from "@/core/chart/drawings/types";
-import { useApp } from "./context";
+import { useApp } from "./Context";
 
 interface ToolboxProps {
     chart: IChartApi | null;
@@ -29,7 +29,7 @@ const Toolbox: React.FC<ToolboxProps> = ({ chart, series }) => {
         return () => {
             window.removeEventListener("keydown", handleEscape);
         }
-    }, []);
+    }, [activeTool]);
 
     function setTool(tool: DrawingTool) {
         if (!chart || !series) return;
@@ -48,6 +48,7 @@ const Toolbox: React.FC<ToolboxProps> = ({ chart, series }) => {
                 action.startTool(tool, handler)
             }
         } catch (error) {
+            console.error("failed to set tool: ", error);
             action.cancelTool()
         }
     }
