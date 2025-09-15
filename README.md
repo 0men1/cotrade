@@ -9,7 +9,6 @@ Requirements
 
 
 PROBLEM DISCOVERY:
-- Switching to new timeframes does not load chart or tick data (useEffect issue?)
 - Starting a collab session locks the host in loading mode 
 
 
