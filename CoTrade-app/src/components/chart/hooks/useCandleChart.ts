@@ -46,7 +46,6 @@ export function useCandleChart(
         if (!seriesRef.current) return;
 
         const rounded = Math.floor(tick.timestamp / interval) * interval;
-
         const existingCandle = candleCache.current.get(rounded);
 
         if (existingCandle) {
@@ -69,9 +68,10 @@ export function useCandleChart(
             lastTime.current = rounded;
         }
 
+        candleCache.current.set(currentCandle.current.time, currentCandle.current);
         seriesRef.current.update({
             ...currentCandle.current,
-            time: currentCandle.current.time as UTCTimestamp
+            // time: currentCandle.current.time as UTCTimestamp
         });
     }, [interval]);
 
@@ -115,12 +115,10 @@ export function useCandleChart(
             const sortedCandles = Array.from(candleCache.current.values())
                 .sort((a, b) => (a.time) - (b.time));
 
-            setTimeout(() => {
-                if (seriesRef.current) {
-                    seriesRef.current.setData(sortedCandles);
-                    setChartInitialized(true);
-                }
-            }, 250)
+            if (seriesRef.current) {
+                seriesRef.current.setData(sortedCandles);
+                setChartInitialized(true);
+            }
         } catch (error) {
             console.error(`Error fetching candles: `, error)
         }
@@ -145,6 +143,9 @@ export function useCandleChart(
             if (unsubscribeStatusListener.current) {
                 unsubscribeStatusListener.current();
                 unsubscribeStatusListener.current = null;
+            }
+            if (candleCache.current) {
+                candleCache.current.clear();
             }
         } catch (error) {
             console.error('Error during chart cleanup:', error);
@@ -237,13 +238,6 @@ export function useCandleChart(
         safeCleanup,
         loadHistoricalCandles,
     ]);
-
-
-    // useChartInteractions({
-    //     chart: chartRef.current!,
-    //     series: seriesRef.current!,
-    //     containerRef: containerRef.current!,
-    // });
 
     useEffect(() => {
         if (!chartRef.current) return;

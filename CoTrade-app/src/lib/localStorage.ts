@@ -49,9 +49,6 @@ export function saveAppState(state: AppState) {
         chart: {
             id: state.chart.id,
             tools: state.chart.tools,
-            drawings: {
-                ...state.chart.drawings,
-            },
             settings: {
                 ...state.chart.settings
             },

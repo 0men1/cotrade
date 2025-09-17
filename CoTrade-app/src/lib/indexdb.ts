@@ -22,7 +22,6 @@ function initDatabase(): Promise<IDBDatabase> {
 
         request.onsuccess = (e: Event) => {
             db = request.result;
-            console.log("Database opened successfully: ", e);
             resolve(db)
         }
 
@@ -30,7 +29,7 @@ function initDatabase(): Promise<IDBDatabase> {
             const database = request.result;
 
             const store = database.createObjectStore(STORE_NAME, {
-                keyPath: "chartID"
+                keyPath: "chartId"
             });
             store.createIndex("by_chart_id", "chartId", { unique: true })
             store.createIndex("by_timestamp", "timestamp")
@@ -50,6 +49,11 @@ async function ensureDatabase(): Promise<IDBDatabase> {
 }
 
 export async function setDrawings(chartId: string, drawings: SerializedDrawing[]): Promise<void> {
+    if (!chartId || typeof chartId !== "string") {
+        console.error("Invalid chartId");
+        return;
+    }
+
     try {
         const database = await ensureDatabase();
 
@@ -60,14 +64,15 @@ export async function setDrawings(chartId: string, drawings: SerializedDrawing[]
             const data = {
                 chartId,
                 drawings,
-                timeStamp: Date.now(),
+                timestamp: Date.now(),
                 lastModified: new Date().toISOString()
             }
 
-            const request = store.put({ chartId, drawings: data })
+            const request = store.put(data)
 
             request.onsuccess = () => {
                 console.log(`Drawing data for ${chartId} saved`)
+                console.log(`Saved drawings: `, drawings)
                 resolve();
             }
 
@@ -87,6 +92,10 @@ export async function setDrawings(chartId: string, drawings: SerializedDrawing[]
 }
 
 export async function getDrawings(chartId: string): Promise<SerializedDrawing[]> {
+    if (!chartId || typeof chartId !== "string") {
+        console.error("Invalid chartId");
+        return [];
+    }
     try {
         const database = await ensureDatabase();
         return new Promise((resolve, reject) => {
@@ -95,7 +104,7 @@ export async function getDrawings(chartId: string): Promise<SerializedDrawing[]>
             const request = store.get(chartId);
 
             request.onsuccess = () => {
-               const result = request.result;
+                const result = request.result;
                 if (result && result.drawings) {
                     resolve(result.drawings);
                 } else {

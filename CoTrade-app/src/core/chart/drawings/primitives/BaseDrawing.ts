@@ -1,18 +1,27 @@
-import { IChartApi, ISeriesApi, SeriesType, ISeriesPrimitive, Time, Coordinate, IPrimitivePaneView, SeriesAttachedParameter, ISeriesPrimitiveAxisView } from 'lightweight-charts';
+import { IChartApi, ISeriesApi, SeriesType, ISeriesPrimitive, Time, Coordinate, IPrimitivePaneView, SeriesAttachedParameter, ISeriesPrimitiveAxisView, PrimitiveHoveredItem, PrimitivePaneViewZOrder } from 'lightweight-charts';
 import { Point } from '@/core/chart/types';
 import { BaseOptions, EditableOption, ISerializable, SerializedDrawing } from '../types';
 
 
-export abstract class BaseDrawing implements ISeriesPrimitive<Time>, ISerializable {
+export abstract class BaseDrawing implements ISeriesPrimitive<Time>, ISerializable, PrimitiveHoveredItem {
     protected readonly _id: string;
+
     protected _isDestroyed: boolean = false;
     protected _isSelected: boolean = false;
+
     protected _chart!: IChartApi;
     protected _series!: ISeriesApi<SeriesType>;
+
     protected _requestUpdate: (() => void) | null = null;
     protected _visibleRangeUpdateHandler: (() => void) | null = null;
+
     public _paneViews: IPrimitivePaneView[];
     public _timeAxisViews: ISeriesPrimitiveAxisView[];
+
+    externalId: string;
+    cursorStyle?: string | undefined;
+    isBackground?: boolean | undefined;
+    zOrder: PrimitivePaneViewZOrder = "top";
 
 
     constructor(
@@ -23,6 +32,7 @@ export abstract class BaseDrawing implements ISeriesPrimitive<Time>, ISerializab
         id?: string,
     ) {
         this._id = id ? id : crypto.randomUUID();
+        this.externalId = this._id;
         this._paneViews = paneViews;
         this._timeAxisViews = axisViews;
         this.initialize();
@@ -69,6 +79,13 @@ export abstract class BaseDrawing implements ISeriesPrimitive<Time>, ISerializab
             this._chart.timeScale().unsubscribeVisibleLogicalRangeChange(this._visibleRangeUpdateHandler);
             this._visibleRangeUpdateHandler = null;
         }
+    }
+
+    hitTest(x: number, y: number): PrimitiveHoveredItem | null {
+        if (this.isPointOnDrawing(x, y)) {
+            return this;
+        };
+        return null;
     }
 
     getControlPointsAt(x: Coordinate, y: Coordinate): number | null {

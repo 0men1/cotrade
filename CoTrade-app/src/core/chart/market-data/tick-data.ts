@@ -36,7 +36,6 @@ async function loadAndCacheAdapter(exchange: ExchangeType): Promise<ExchangeAdap
             const listeners = new Set<(state: ConnectionState) => void>();
             statusListeners.set(exchange, listeners);
             obj.onStatusChange((state: ConnectionState) => {
-                console.log("status change to: ", state);
                 listeners.forEach(l => l(state));
             })
             return obj;

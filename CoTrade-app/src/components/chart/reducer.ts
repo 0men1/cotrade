@@ -20,6 +20,7 @@ export type Action =
     | { type: "SELECT_DRAWING", payload: { drawing: BaseDrawing | null } }
     | { type: "START_TOOL", payload: { tool: DrawingTool, handler: BaseDrawingHandler } }
     | { type: "CANCEL_TOOL", payload: null }
+    | { type: "INTIALIZE_DRAWINGS", payload: { drawings: SerializedDrawing[] } }
 
     // -----------CHART LOGIC----------
     | { type: "SELECT_CHART", payload: { symbol: string, timeframe: IntervalKey, exchange: string } }
@@ -190,6 +191,10 @@ export function Reducer(state: AppState, action: Action): AppState {
                 chart: {
                     ...state.chart,
                     id: `${action.payload.symbol.toLowerCase()}:${action.payload.exchange.toLowerCase()}`,
+                    drawings: {
+                        collection: [],
+                        selected: null,
+                    },
                     data: {
                         ...state.chart.data,
                         symbol: action.payload.symbol,
@@ -283,6 +288,19 @@ export function Reducer(state: AppState, action: Action): AppState {
                     chartApi: action.payload.chartApi,
                     seriesApi: action.payload.seriesApi,
                     container: action.payload.container
+                }
+            }
+        }
+
+        case "INTIALIZE_DRAWINGS": {
+            return {
+                ...state,
+                chart: {
+                    ...state.chart,
+                    drawings: {
+                        ...state.chart.drawings,
+                        collection: action.payload.drawings
+                    }
                 }
             }
         }

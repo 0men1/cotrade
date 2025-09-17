@@ -6,15 +6,12 @@ import { DrawingHandlerFactory } from "@/core/chart/drawings/DrawingHandlerFacto
 import { Button } from "../ui/button";
 import { DrawingTool } from "@/core/chart/drawings/types";
 import { useApp } from "./Context";
-import { useChartInteractions } from "./hooks/useChartInteractions";
 
 function Toolbox() {
     const { state, action } = useApp();
     const { chartApi, seriesApi } = state.chart;
 
     const { activeTool } = state.chart.tools
-
-    useChartInteractions();
 
     useEffect(() => {
         const handleEscape = (e: KeyboardEvent) => {

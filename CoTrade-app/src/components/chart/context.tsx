@@ -5,8 +5,9 @@ import { BaseDrawing } from "@/core/chart/drawings/primitives/BaseDrawing";
 import { DrawingTool, BaseDrawingHandler, SerializedDrawing } from "@/core/chart/drawings/types";
 import { ExchangeType, IntervalKey } from "@/core/chart/market-data/types";
 import { CrosshairMode, IChartApi, ISeriesApi, SeriesType } from "lightweight-charts";
-import { LocalStorage, saveAppState } from "@/lib/localStorage";
-import { Action, Reducer } from "./Reducer";
+import { saveAppState } from "@/lib/localStorage";
+import { Action, deepMerge, Reducer } from "./Reducer";
+
 
 export interface ChartSettings {
     isOpen: boolean
@@ -32,6 +33,7 @@ export interface ChartSettings {
 }
 
 export interface AppState {
+    lastSaved: string,
     collaboration: {
         isOpen: boolean;
         displayName: string,
@@ -67,6 +69,7 @@ export interface AppState {
 }
 
 export const defaultAppState: AppState = {
+    lastSaved: "",
     collaboration: {
         isOpen: false,
         displayName: "solo_user",
@@ -141,6 +144,7 @@ interface AppContextType {
 
         selectChart: (symbol: string, timeframe: IntervalKey, exchange: string) => void;
         initializeApi: (chartApi: IChartApi, seriesApi: ISeriesApi<SeriesType>, container: HTMLDivElement) => void;
+        initializeDrawings: (drawings: SerializedDrawing[]) => void;
 
         toggleSettings: (state: boolean) => void;
         updateSettings: (settings: ChartSettings) => void;
@@ -156,25 +160,21 @@ export const AppProvider: React.FC<{
     roomId?: string;
     initialState?: Partial<AppState>;
 }> = ({ children, initialState, roomId }) => {
-    const [state, dispatch] = useReducer(Reducer, {
-        ...defaultAppState,
-        ...initialState,
-        collaboration: {
-            ...defaultAppState.collaboration,
-            ...initialState?.collaboration,
-            room: {
-                ...defaultAppState.collaboration.room,
-                ...initialState?.collaboration?.room,
-                isLoading: !!roomId
-            }
-        }
-    });
+    const mergedInitial = deepMerge(defaultAppState, initialState || {}) as AppState;
+
+    if (roomId) {
+        mergedInitial.collaboration.room.isLoading = true;
+    }
+
+    const [state, dispatch] = useReducer(Reducer, mergedInitial);
+
     const wsRef = useRef<WebSocket | null>(null);
 
     useEffect(() => {
         if (state.chart.tools.activeTool || state.chart.tools.activeHandler || state.chart.drawings.selected) {
             return;
         }
+
         saveAppState(state);
     }, [state])
 
@@ -228,6 +228,8 @@ export const AppProvider: React.FC<{
             }
             dispatch(act);
             wsRef.current?.send(JSON.stringify(act));
+
+
         },
 
         deleteDrawing: (drawing: BaseDrawing) => {
@@ -331,6 +333,10 @@ export const AppProvider: React.FC<{
 
         initializeApi: (chartApi: IChartApi, seriesApi: ISeriesApi<SeriesType>, container: HTMLDivElement) => {
             dispatch({ type: "INITIALIZE_API", payload: { chartApi, seriesApi, container } })
+        },
+
+        initializeDrawings: (drawings: SerializedDrawing[]) => {
+            dispatch({ type: "INTIALIZE_DRAWINGS", payload: { drawings } })
         },
 
         toggleSettings: (state: boolean) => {

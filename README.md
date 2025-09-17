@@ -10,7 +10,7 @@ Requirements
 
 PROBLEM DISCOVERY:
 - When in collab mode, refreshing the page forces all clients to go back to default state (sol-usd 1m)
-- Object is disposed error when drawing and then changing charts or refreshing
+- Object is disposed error when drawing and then changing charts or refreshing // Solved? Unsure how to replicate.
 
 
 # 📈 CoTrade - Collaborative Financial Charting Platform
