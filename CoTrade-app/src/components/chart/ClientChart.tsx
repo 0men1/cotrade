@@ -18,7 +18,7 @@ export interface ClientProps {
 
 export default function ClientChart({ roomId, initialState }: ClientProps) {
     return (
-        <AppProvider roomId={roomId} initialState={initialState}>
+        <AppProvider initialState={initialState}>
             <ProvideConsumer />
         </AppProvider>
     );
@@ -39,7 +39,6 @@ function ProvideConsumer() {
 
     // useChartInteractions()
     useChartDrawings();
-
 
     const { isLoading, id } = state.collaboration.room;
 

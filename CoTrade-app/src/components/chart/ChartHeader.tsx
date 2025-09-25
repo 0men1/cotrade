@@ -1,8 +1,25 @@
-import { ChevronDown, Settings } from "lucide-react";
+import { ChevronDown, Settings, Wifi } from "lucide-react";
 import { Button } from "../ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { IntervalKey } from "@/core/chart/market-data/types";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ConnectionStatus, IntervalKey } from "@/core/chart/market-data/types";
 import { useApp } from "./Context";
+
+
+function getStatusDiv(status: ConnectionStatus) {
+    switch (status) {
+        case ConnectionStatus.CONNECTED:
+            return (<span className="text-green-500">●</span>)
+        case ConnectionStatus.DISCONNECTED:
+            return (<span className="text-red-500">●</span>)
+        case ConnectionStatus.CONNECTING:
+            break;
+        case ConnectionStatus.ERROR:
+            break;
+        case ConnectionStatus.RECONNECTING:
+            return (<span className="text-yellow-500">●</span>)
+    }
+}
 
 export default function ChartHeader() {
     const { state, action } = useApp();
@@ -63,6 +80,32 @@ export default function ChartHeader() {
                 >
                     Share
                 </Button>
+
+                {/* Connection Status Icon with Tooltip */}
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button variant="ghost" size="sm" className="p-2">
+                            <Wifi size={18} className="text-slate-600 dark:text-slate-400" />
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="p-3 max-w-xs">
+                        <div className="space-y-2">
+                            <h4 className="font-semibold text-sm">Connection Status</h4>
+                            <div className="space-y-1 text-xs">
+                                {/* Add your connection statuses here */}
+                                <div className="flex items-center justify-between">
+                                    <span>Collab Connection:</span>
+                                    {getStatusDiv(state.collaboration.room.status)}
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span>Candle Data:</span>
+                                    {getStatusDiv(state.chart.data.status)}
+                                </div>
+                            </div>
+                        </div>
+                    </TooltipContent>
+                </Tooltip>
+
                 <Button
                     variant="outline"
                     size="lg"
@@ -74,4 +117,4 @@ export default function ChartHeader() {
             </div>
         </div>
     );
-};
+}

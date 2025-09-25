@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useMemo, useReducer, useRef } from "react";
 import { BaseDrawing } from "@/core/chart/drawings/primitives/BaseDrawing";
 import { DrawingTool, BaseDrawingHandler, SerializedDrawing } from "@/core/chart/drawings/types";
-import { ExchangeType, IntervalKey } from "@/core/chart/market-data/types";
+import { ConnectionStatus, ExchangeType, IntervalKey } from "@/core/chart/market-data/types";
 import { CrosshairMode, IChartApi, ISeriesApi, SeriesType } from "lightweight-charts";
 import { saveAppState } from "@/lib/localStorage";
 import { Action, deepMerge, Reducer } from "./Reducer";
@@ -42,6 +42,7 @@ export interface AppState {
             isHost: boolean,
             isLoading: boolean,
             activeUsers: string[]
+            status: ConnectionStatus;
         }
     };
     chart: {
@@ -64,6 +65,7 @@ export interface AppState {
             symbol: string;
             timeframe: IntervalKey;
             exchange: ExchangeType;
+            status: ConnectionStatus;
         };
     }
 }
@@ -78,6 +80,7 @@ export const defaultAppState: AppState = {
             isLoading: false,
             isHost: false,
             activeUsers: [],
+            status: ConnectionStatus.DISCONNECTED
         }
     },
     chart: {
@@ -118,7 +121,8 @@ export const defaultAppState: AppState = {
             style: 'candle',
             symbol: "SOL-USD",
             timeframe: "1m",
-            exchange: "coinbase"
+            exchange: "coinbase",
+            status: ConnectionStatus.DISCONNECTED
         },
         cursor: CrosshairMode.Normal,
     }
@@ -139,11 +143,14 @@ interface AppContextType {
         sendFullState: () => void;
         handleIncomingAction: (incomingAction: Action) => void;
         toggleCollabWindow: (state: boolean) => void;
+        setCollabConnectionStatus: (status: ConnectionStatus) => void;
 
         startTool: (tool: DrawingTool, handler: BaseDrawingHandler) => void;
         cancelTool: () => void;
 
         selectChart: (symbol: string, timeframe: IntervalKey, exchange: string) => void;
+        setChartConnectionStatus: (status: ConnectionStatus) => void;
+
         initializeApi: (chartApi: IChartApi, seriesApi: ISeriesApi<SeriesType>, container: HTMLDivElement) => void;
         initializeDrawings: (drawings: SerializedDrawing[]) => void;
 
@@ -158,12 +165,10 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{
     children: React.ReactNode;
-    // roomId?: string;
     initialState?: Partial<AppState>;
 }> = ({
     children,
     initialState,
-    // roomId
 }) => {
         const mergedInitial = deepMerge(defaultAppState, initialState || {}) as AppState;
         const [state, dispatch] = useReducer(Reducer, mergedInitial);
@@ -188,7 +193,8 @@ export const AppProvider: React.FC<{
                 wsRef.current.onopen = () => {
                     console.log("Socket connection open")
                     action.joinCollabRoom({ roomId: id, displayName: state.collaboration.displayName })
-                    dispatch({ type: "END_LOADING", payload: null })
+                    action.setCollabConnectionStatus(ConnectionStatus.CONNECTED)
+                    // dispatch({ type: "END_LOADING", payload: null })
                 }
 
                 wsRef.current.onmessage = (event: MessageEvent) => {
@@ -200,12 +206,14 @@ export const AppProvider: React.FC<{
                 wsRef.current.onclose = () => {
                     console.log("Socket connection closed")
                     action.exitCollabRoom()
-                    dispatch({ type: "END_LOADING", payload: null })
+                    action.setCollabConnectionStatus(ConnectionStatus.DISCONNECTED)
+                    // dispatch({ type: "END_LOADING", payload: null })
                 }
 
                 wsRef.current.onerror = (error: Event) => {
                     console.log("socket connection error: ", error)
-                    dispatch({ type: "END_LOADING", payload: null })
+                    action.setCollabConnectionStatus(ConnectionStatus.ERROR)
+                    // dispatch({ type: "END_LOADING", payload: null })
                 }
             }
 
@@ -334,6 +342,14 @@ export const AppProvider: React.FC<{
                 }
             },
 
+            setCollabConnectionStatus: (status: ConnectionStatus) => {
+                const act: Action = {
+                    type: "SET_CONNECTION_STATUS_COLLAB",
+                    payload: { status }
+                }
+                dispatch(act);
+            },
+
 
             // ----------------CHART FUNCTIONS-------------------
             selectChart: (symbol: string, timeframe: IntervalKey, exchange: string) => {
@@ -348,6 +364,15 @@ export const AppProvider: React.FC<{
                 dispatch(act)
                 wsRef.current?.send(JSON.stringify(act))
             },
+
+            setChartConnectionStatus: (status: ConnectionStatus) => {
+                const act: Action = {
+                    type: "SET_CONNECTION_STATUS_CHART",
+                    payload: { status }
+                }
+                dispatch(act);
+            },
+
 
             initializeApi: (chartApi: IChartApi, seriesApi: ISeriesApi<SeriesType>, container: HTMLDivElement) => {
                 dispatch({ type: "INITIALIZE_API", payload: { chartApi, seriesApi, container } })

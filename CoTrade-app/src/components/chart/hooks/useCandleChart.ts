@@ -26,7 +26,7 @@ export async function fetchHistoricalCandles(ticker: string, timeframe: string, 
 export function useCandleChart(
     containerRef: React.RefObject<HTMLDivElement | null>,
 ) {
-    const { state } = useApp();
+    const { state, action } = useApp();
     const { symbol, exchange, timeframe } = state.chart.data
     const chartRef = useRef<IChartApi | null>(null);
     const seriesRef = useRef<ISeriesApi<SeriesType> | null>(null);
@@ -80,9 +80,12 @@ export function useCandleChart(
             if (connectionState?.status !== ConnectionStatus.CONNECTED) {
                 unsubscribeTickData.current = await subscribeToTicks(symbol, exchange, updateChart);
                 unsubscribeStatusListener.current = await subscribeToStatus(exchange, setConnectionState);
+
+                action.setChartConnectionStatus(ConnectionStatus.CONNECTED)
             }
         } catch (error) {
             console.error("failed to fetch tick data: ", error)
+            action.setChartConnectionStatus(ConnectionStatus.ERROR)
         }
     }, [symbol, exchange])
 
@@ -95,6 +98,7 @@ export function useCandleChart(
             if (unsubscribeTickData.current) {
                 unsubscribeTickData.current();
             }
+            action.setChartConnectionStatus(ConnectionStatus.DISCONNECTED)
         }
     }, [symbol, exchange, setupTickConnection])
 

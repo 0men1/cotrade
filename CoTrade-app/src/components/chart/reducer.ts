@@ -1,18 +1,19 @@
 import { BaseDrawingHandler, DrawingTool, SerializedDrawing } from "@/core/chart/drawings/types";
-import { ExchangeType, IntervalKey } from "@/core/chart/market-data/types";
+import { ConnectionStatus, ExchangeType, IntervalKey } from "@/core/chart/market-data/types";
 import { BaseDrawing } from "@/core/chart/drawings/primitives/BaseDrawing";
 import { AppState, ChartSettings } from "./Context";
 import { IChartApi, ISeriesApi, SeriesType } from "lightweight-charts";
 
 export type Action =
     // -----------ROOM LOGIC----------
-    | { type: "CREATE_COLLAB_ROOM", payload: {roomId: string} }
+    | { type: "CREATE_COLLAB_ROOM", payload: { roomId: string } }
     | { type: "USER_JOINED", payload: { displayName: string } }
     | { type: "USER_LEFT", payload: { displayName: string } }
     | { type: "SYNC_FULL_STATE", payload: { state: AppState } }
     | { type: "JOIN_COLLAB_ROOM", payload: { room: { roomId: string | null, displayName: string } } }
     | { type: "LEAVE_COLLAB_ROOM", payload: null }
     | { type: "END_LOADING", payload: null }
+    | { type: "SET_CONNECTION_STATUS_COLLAB", payload: { status: ConnectionStatus } }
 
     // -----------DRAWING LOGIC----------
     | { type: "ADD_DRAWING", payload: { drawing: SerializedDrawing } }
@@ -29,6 +30,7 @@ export type Action =
     | { type: "UPDATE_SETTINGS", payload: { settings: ChartSettings } }
     | { type: "CLEANUP_STATE", payload: null }
     | { type: "INITIALIZE_API", payload: { chartApi: IChartApi, seriesApi: ISeriesApi<SeriesType>, container: HTMLDivElement } }
+    | { type: "SET_CONNECTION_STATUS_CHART", payload: { status: ConnectionStatus } }
 
 
 function mergeDrawings(local: SerializedDrawing[], incoming: SerializedDrawing[]): SerializedDrawing[] {
@@ -80,6 +82,33 @@ export function deepMerge(target: any, source: any) {
 
 export function Reducer(state: AppState, action: Action): AppState {
     switch (action.type) {
+        case "SET_CONNECTION_STATUS_CHART": {
+            return {
+                ...state,
+                chart: {
+                    ...state.chart,
+                    data: {
+                        ...state.chart.data,
+                        status: action.payload.status
+                    }
+                }
+            }
+        }
+
+        case "SET_CONNECTION_STATUS_COLLAB": {
+            return {
+                ...state,
+                collaboration: {
+                    ...state.collaboration,
+                    room: {
+                        ...state.collaboration.room,
+                        status: action.payload.status
+                    }
+                }
+            }
+        }
+
+
         case "USER_JOINED": {
             return {
                 ...state,
@@ -91,7 +120,6 @@ export function Reducer(state: AppState, action: Action): AppState {
                     }
                 }
             }
-
         }
 
         case "USER_LEFT": {
