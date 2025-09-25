@@ -2,15 +2,12 @@ CURRENT TASK:
 Distinguish drawings made on different charts and render them correctly when switching between charts.
 
 Requirements
-- Each chart should maintain its own array of drawings
-- Drawings should be destroyed correctly with no leaks
-- Drawings should NEVER end up on a chart they do not belong in
-- Handle errors gracefully and retry when fails
+- Handle errors gracefully and retry when fails 
 
 
 PROBLEM DISCOVERY:
-- When in collab mode, refreshing the page forces all clients to go back to default state (sol-usd 1m)
-- Object is disposed error when drawing and then changing charts or refreshing // Solved? Unsure how to replicate.
+- Socket connections are frail
+- State syncs need to omit a few unnecessary and problematic attrs.
 
 
 # 📈 CoTrade - Collaborative Financial Charting Platform
