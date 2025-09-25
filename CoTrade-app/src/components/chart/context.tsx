@@ -131,6 +131,7 @@ interface AppContextType {
         deleteDrawing: (drawing: BaseDrawing) => void;
         selectDrawing: (drawing: BaseDrawing | null) => void;
 
+        createCollabRoom: (roomId: string) => void;
         joinCollabRoom: (room: { roomId: string, displayName: string }) => void;
         exitCollabRoom: () => void;
         userJoined: (displayName: string) => void;
@@ -157,209 +158,226 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{
     children: React.ReactNode;
-    roomId?: string;
+    // roomId?: string;
     initialState?: Partial<AppState>;
-}> = ({ children, initialState, roomId }) => {
-    const mergedInitial = deepMerge(defaultAppState, initialState || {}) as AppState;
+}> = ({
+    children,
+    initialState,
+    // roomId
+}) => {
+        const mergedInitial = deepMerge(defaultAppState, initialState || {}) as AppState;
+        const [state, dispatch] = useReducer(Reducer, mergedInitial);
+        const wsRef = useRef<WebSocket | null>(null);
 
-    if (roomId) {
-        mergedInitial.collaboration.room.isLoading = true;
-    }
-
-    const [state, dispatch] = useReducer(Reducer, mergedInitial);
-
-    const wsRef = useRef<WebSocket | null>(null);
-
-    useEffect(() => {
-        if (state.chart.tools.activeTool || state.chart.tools.activeHandler || state.chart.drawings.selected) {
-            return;
-        }
-
-        saveAppState(state);
-    }, [state])
-
-    useEffect(() => {
-        if (roomId && !wsRef.current) {
-            const roomUrl = `localhost:8080/rooms/join?roomId=${roomId}&displayName=${state.collaboration.displayName}`
-
-            wsRef.current = new WebSocket(`ws://${roomUrl}`);
-
-            wsRef.current.onopen = () => {
-                console.log("Socket connection open")
-                action.joinCollabRoom({ roomId, displayName: state.collaboration.displayName })
-                dispatch({ type: "END_LOADING", payload: null })
+        useEffect(() => {
+            if (state.chart.tools.activeTool || state.chart.tools.activeHandler || state.chart.drawings.selected) {
+                return;
             }
 
-            wsRef.current.onmessage = (event: MessageEvent) => {
-                const incomingAction = JSON.parse(event.data)
-                console.log(`Received action: `, incomingAction.type)
-                action.handleIncomingAction(incomingAction);
-            }
+            saveAppState(state);
+        }, [state])
 
-            wsRef.current.onclose = () => {
-                console.log("Socket connection closed")
-                action.exitCollabRoom()
-                dispatch({ type: "END_LOADING", payload: null })
-            }
+        useEffect(() => {
+            const { id } = state.collaboration.room
 
-            wsRef.current.onerror = (error: Event) => {
-                console.log("socket connection error: ", error)
-                dispatch({ type: "END_LOADING", payload: null })
-            }
-        }
+            if (id && !wsRef.current) {
+                const roomUrl = `localhost:8080/rooms/join?roomId=${id}&displayName=${state.collaboration.displayName}`
 
-        return () => {
-            if (wsRef.current) {
-                wsRef.current.close();
-                wsRef.current = null;
-            }
-        }
-    }, [roomId])
+                wsRef.current = new WebSocket(`ws://${roomUrl}`);
 
-    const action = useMemo(() => ({
+                wsRef.current.onopen = () => {
+                    console.log("Socket connection open")
+                    action.joinCollabRoom({ roomId: id, displayName: state.collaboration.displayName })
+                    dispatch({ type: "END_LOADING", payload: null })
+                }
 
-        // ----------------DRAWING FUNCTIONS-------------------
-        addDrawing: (drawing: BaseDrawing) => {
-            const act: Action = {
-                type: "ADD_DRAWING",
-                payload: {
-                    drawing: drawing.serialize()
+                wsRef.current.onmessage = (event: MessageEvent) => {
+                    const incomingAction = JSON.parse(event.data)
+                    console.log(`Received action: `, incomingAction.type)
+                    action.handleIncomingAction(incomingAction);
+                }
+
+                wsRef.current.onclose = () => {
+                    console.log("Socket connection closed")
+                    action.exitCollabRoom()
+                    dispatch({ type: "END_LOADING", payload: null })
+                }
+
+                wsRef.current.onerror = (error: Event) => {
+                    console.log("socket connection error: ", error)
+                    dispatch({ type: "END_LOADING", payload: null })
                 }
             }
-            dispatch(act);
-            wsRef.current?.send(JSON.stringify(act));
 
-
-        },
-
-        deleteDrawing: (drawing: BaseDrawing) => {
-            const act: Action = {
-                type: "DELETE_DRAWING",
-                payload: {
-                    drawing:
-                        drawing.serialize()
+            return () => {
+                if (wsRef.current) {
+                    wsRef.current.close();
+                    wsRef.current = null;
                 }
             }
-            dispatch(act);
-            wsRef.current?.send(JSON.stringify(act));
-        },
+        }, [state.collaboration.room.id])
 
-        selectDrawing: (drawing: BaseDrawing | null) => {
-            dispatch({ type: "SELECT_DRAWING", payload: { drawing } })
-        },
+        const action = useMemo(() => ({
 
-        startTool: (tool: DrawingTool, handler: BaseDrawingHandler) => {
-            dispatch({ type: "START_TOOL", payload: { tool, handler } })
-        },
-
-        cancelTool: () => {
-            dispatch({ type: "CANCEL_TOOL", payload: null })
-        },
-
-
-
-        // ----------------COLLAB FUNCTIONS-------------------
-        userJoined: (displayName: string) => {
-            console.log("User joined")
-            const act: Action = {
-                type: "USER_JOINED",
-                payload: {
-                    displayName
+            // ----------------DRAWING FUNCTIONS-------------------
+            addDrawing: (drawing: BaseDrawing) => {
+                const act: Action = {
+                    type: "ADD_DRAWING",
+                    payload: {
+                        drawing: drawing.serialize()
+                    }
                 }
-            }
-            action.handleIncomingAction(act);
-        },
+                dispatch(act);
+                wsRef.current?.send(JSON.stringify(act));
 
-        userLeft: (displayName: string) => {
-            const act: Action = {
-                type: "USER_LEFT",
-                payload: {
-                    displayName
+
+            },
+
+            deleteDrawing: (drawing: BaseDrawing) => {
+                const act: Action = {
+                    type: "DELETE_DRAWING",
+                    payload: {
+                        drawing:
+                            drawing.serialize()
+                    }
                 }
-            }
-            action.handleIncomingAction(act);
-        },
+                dispatch(act);
+                wsRef.current?.send(JSON.stringify(act));
+            },
 
-        toggleCollabWindow: (state: boolean) => {
-            dispatch({ type: "TOGGLE_COLLAB_WINDOW", payload: { state } })
-        },
+            selectDrawing: (drawing: BaseDrawing | null) => {
+                dispatch({ type: "SELECT_DRAWING", payload: { drawing } })
+            },
 
-        joinCollabRoom: (room: { roomId: string, displayName: string }) => {
-            dispatch({ type: "JOIN_COLLAB_ROOM", payload: { room } })
-        },
+            startTool: (tool: DrawingTool, handler: BaseDrawingHandler) => {
+                dispatch({ type: "START_TOOL", payload: { tool, handler } })
+            },
 
-        exitCollabRoom: () => {
-            dispatch({ type: "LEAVE_COLLAB_ROOM", payload: null })
-            wsRef.current?.close()
-        },
+            cancelTool: () => {
+                dispatch({ type: "CANCEL_TOOL", payload: null })
+            },
 
-        sendFullState: () => {
-            const act: Action = {
-                type: "SYNC_FULL_STATE",
-                payload: {
-                    state
+
+
+            // ----------------COLLAB FUNCTIONS-------------------
+            createCollabRoom: (roomId: string) => {
+                const act: Action = {
+                    type: "CREATE_COLLAB_ROOM",
+                    payload: {
+                        roomId
+                    }
                 }
-            }
-            wsRef.current?.send(JSON.stringify(act))
-        },
+                dispatch(act)
+            },
 
-        handleIncomingAction: (incomingAction: Action) => {
-            if (incomingAction.type === "USER_JOINED") {
-                dispatch(incomingAction);
-                action.sendFullState();
-            } else if (incomingAction.type === "SYNC_FULL_STATE") {
-                dispatch(incomingAction);
-            } else if (incomingAction.type === "USER_LEFT") {
-                dispatch(incomingAction);
-            } else {
-                dispatch(incomingAction);
-            }
-        },
-
-
-        // ----------------CHART FUNCTIONS-------------------
-        selectChart: (symbol: string, timeframe: IntervalKey, exchange: string) => {
-            const act: Action = {
-                type: "SELECT_CHART",
-                payload: {
-                    symbol,
-                    timeframe,
-                    exchange
+            userJoined: (displayName: string) => {
+                const act: Action = {
+                    type: "USER_JOINED",
+                    payload: {
+                        displayName
+                    }
                 }
-            }
-            dispatch(act)
-            wsRef.current?.send(JSON.stringify(act))
-        },
+                action.handleIncomingAction(act);
+            },
 
-        initializeApi: (chartApi: IChartApi, seriesApi: ISeriesApi<SeriesType>, container: HTMLDivElement) => {
-            dispatch({ type: "INITIALIZE_API", payload: { chartApi, seriesApi, container } })
-        },
+            userLeft: (displayName: string) => {
+                const act: Action = {
+                    type: "USER_LEFT",
+                    payload: {
+                        displayName
+                    }
+                }
+                action.handleIncomingAction(act);
+            },
 
-        initializeDrawings: (drawings: SerializedDrawing[]) => {
-            dispatch({ type: "INTIALIZE_DRAWINGS", payload: { drawings } })
-        },
+            toggleCollabWindow: (state: boolean) => {
+                dispatch({ type: "TOGGLE_COLLAB_WINDOW", payload: { state } })
+            },
 
-        toggleSettings: (state: boolean) => {
-            dispatch({ type: "TOGGLE_SETTINGS", payload: { state } })
-        },
+            joinCollabRoom: (room: { roomId: string, displayName: string }) => {
+                dispatch({ type: "JOIN_COLLAB_ROOM", payload: { room } })
+            },
 
-        updateSettings: (settings: ChartSettings) => {
-            dispatch({ type: "UPDATE_SETTINGS", payload: { settings } })
-        },
+            exitCollabRoom: () => {
+                dispatch({ type: "LEAVE_COLLAB_ROOM", payload: null })
+                wsRef.current?.close()
+            },
 
-        cleanupState: () => {
-            dispatch({ type: "CLEANUP_STATE", payload: null })
-        },
+            sendFullState: () => {
+                const act: Action = {
+                    type: "SYNC_FULL_STATE",
+                    payload: {
+                        state: {
+                            ...state,
+                            chart: {
+                                ...state.chart,
+                                chartApi: null,
+                                seriesApi: null,
+                                container: null
+                            }
+                        }
+                    }
+                }
+                wsRef.current?.send(JSON.stringify(act))
+            },
+
+            handleIncomingAction: (incomingAction: Action) => {
+                if (incomingAction.type === "USER_JOINED") {
+                    dispatch(incomingAction);
+                    action.sendFullState();
+                } else if (incomingAction.type === "SYNC_FULL_STATE") {
+                    dispatch(incomingAction);
+                } else if (incomingAction.type === "USER_LEFT") {
+                    dispatch(incomingAction);
+                } else {
+                    dispatch(incomingAction);
+                }
+            },
 
 
-    }), [state])
+            // ----------------CHART FUNCTIONS-------------------
+            selectChart: (symbol: string, timeframe: IntervalKey, exchange: string) => {
+                const act: Action = {
+                    type: "SELECT_CHART",
+                    payload: {
+                        symbol,
+                        timeframe,
+                        exchange
+                    }
+                }
+                dispatch(act)
+                wsRef.current?.send(JSON.stringify(act))
+            },
 
-    return (
-        <AppContext.Provider value={{ state, action }}>
-            {children}
-        </AppContext.Provider>
-    );
-};
+            initializeApi: (chartApi: IChartApi, seriesApi: ISeriesApi<SeriesType>, container: HTMLDivElement) => {
+                dispatch({ type: "INITIALIZE_API", payload: { chartApi, seriesApi, container } })
+            },
+
+            initializeDrawings: (drawings: SerializedDrawing[]) => {
+                dispatch({ type: "INTIALIZE_DRAWINGS", payload: { drawings } })
+            },
+
+            toggleSettings: (state: boolean) => {
+                dispatch({ type: "TOGGLE_SETTINGS", payload: { state } })
+            },
+
+            updateSettings: (settings: ChartSettings) => {
+                dispatch({ type: "UPDATE_SETTINGS", payload: { settings } })
+            },
+
+            cleanupState: () => {
+                dispatch({ type: "CLEANUP_STATE", payload: null })
+            },
+
+
+        }), [state])
+
+        return (
+            <AppContext.Provider value={{ state, action }}>
+                {children}
+            </AppContext.Provider>
+        );
+    };
 
 export const useApp = () => {
     const Context = useContext(AppContext);

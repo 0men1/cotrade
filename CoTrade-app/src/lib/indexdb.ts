@@ -71,8 +71,6 @@ export async function setDrawings(chartId: string, drawings: SerializedDrawing[]
             const request = store.put(data)
 
             request.onsuccess = () => {
-                console.log(`Drawing data for ${chartId} saved`)
-                console.log(`Saved drawings: `, drawings)
                 resolve();
             }
 

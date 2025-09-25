@@ -51,7 +51,6 @@ export function useChartDrawings() {
         }
 
         const initializeDrawings = async () => {
-            console.log("Initializing drawings")
             const recoveredDrawings = await recoverDrawingsFromDB(state.chart.id);
             action.initializeDrawings(recoveredDrawings);
             isInitializedRef.current = state.chart.id;
@@ -70,7 +69,6 @@ export function useChartDrawings() {
         const serializedDrawings = state.chart.drawings.collection;
 
 
-        console.log("Detaching old drawings");
         for (const drawing of currentDrawings.values()) {
             try {
                 seriesApi.detachPrimitive(drawing);
@@ -80,10 +78,8 @@ export function useChartDrawings() {
             }
         }
 
-        console.log("Cleared current drawings");
         currentDrawings.clear();
 
-        console.log("Attaching and restoring drawings");
         for (const drawing of serializedDrawings) {
             const restoredDrawing = restoreDrawing(drawing);
             if (restoredDrawing) {
@@ -96,7 +92,6 @@ export function useChartDrawings() {
 
     useEffect(() => {
         if (!isInitializedRef.current || isInitializedRef.current !== state.chart.id) return;
-        console.log(`Setting drawings ${state.chart.id}: ${state.chart.drawings.collection}`)
         setDrawings(state.chart.id, state.chart.drawings.collection);
     }, [state.chart.drawings.collection, state.chart.id])
 

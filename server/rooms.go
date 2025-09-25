@@ -168,6 +168,8 @@ func JoinRoom(w http.ResponseWriter, r *http.Request) {
 	roomId := r.URL.Query().Get("roomId")
 	displayName := r.URL.Query().Get("displayName")
 
+	fmt.Println(rooms)
+
 	room, ok := rooms[roomId]
 	if !ok {
 		log.Printf("Room not found for ID: %q", roomId)
@@ -224,6 +226,8 @@ func CreateRoom(w http.ResponseWriter, r *http.Request) {
 		"roomId": room.ID,
 		"url":    fmt.Sprintf("/chart/room/%s", room.ID),
 	}
+
+	fmt.Printf("NEW ROOM CREATED: %s\n", response["roomId"])
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

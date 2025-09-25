@@ -20,7 +20,7 @@ func WithCORS(h http.Handler) http.Handler {
 }
 
 func main() {
-	UpdateEnvVars(".env")
+	// UpdateEnvVars(".env")
 	http.Handle("/rooms/create", WithCORS(http.HandlerFunc(CreateRoom)))
 	http.Handle("/rooms/join", WithCORS(http.HandlerFunc(JoinRoom)))
 	http.Handle("/candles", WithCORS(http.HandlerFunc(GetCandles)))

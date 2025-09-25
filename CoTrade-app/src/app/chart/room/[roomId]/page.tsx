@@ -4,16 +4,12 @@ import ClientChart from "@/components/chart/ClientChart";
 import { AppState, defaultAppState } from "@/components/chart/Context";
 import { use, useEffect, useState } from "react";
 import { getInitialState } from "../../page";
-import { useSearchParams } from "next/navigation";
 
 export default function ChartCollabRoom(
     { params }: {
         params: Promise<{ roomId: string }>
     }) {
     const { roomId } = use(params);
-    const searchParams = useSearchParams();
-    const isHost = searchParams.get("isHost") === 'true';
-
     const [initialState, setInitialState] = useState<AppState>(defaultAppState);
     const [isLoaded, setIsLoaded] = useState(false);
 
@@ -23,11 +19,9 @@ export default function ChartCollabRoom(
             return;
         }
 
-        if (isHost) {
-            setInitialState(getInitialState());
-        }
+        setInitialState(getInitialState());
         setIsLoaded(true);
-    }, [roomId, isHost])
+    }, [roomId])
 
     if (!roomId) {
         return <div>Error: Missing room ID</div>;

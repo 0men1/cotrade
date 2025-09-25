@@ -6,7 +6,7 @@ import { IChartApi, ISeriesApi, SeriesType } from "lightweight-charts";
 
 export type Action =
     // -----------ROOM LOGIC----------
-    | { type: "CREATE_COLLAB_ROOM", payload: null }
+    | { type: "CREATE_COLLAB_ROOM", payload: {roomId: string} }
     | { type: "USER_JOINED", payload: { displayName: string } }
     | { type: "USER_LEFT", payload: { displayName: string } }
     | { type: "SYNC_FULL_STATE", payload: { state: AppState } }
@@ -241,6 +241,20 @@ export function Reducer(state: AppState, action: Action): AppState {
             }
         }
 
+        case "CREATE_COLLAB_ROOM": {
+            return {
+                ...state,
+                collaboration: {
+                    ...state.collaboration,
+                    room: {
+                        ...state.collaboration.room,
+                        id: action.payload.roomId,
+                        isHost: true,
+                    }
+                }
+            }
+        }
+
         case "JOIN_COLLAB_ROOM": {
             return {
                 ...state,
@@ -263,6 +277,7 @@ export function Reducer(state: AppState, action: Action): AppState {
                     room: {
                         ...state.collaboration.room,
                         id: null,
+                        isHost: false,
                     }
                 }
             }
@@ -316,6 +331,7 @@ export function Reducer(state: AppState, action: Action): AppState {
                         ...state.collaboration.room,
                         id: null,
                         activeUsers: [],
+                        isHost: false,
                     }
                 },
                 chart: {

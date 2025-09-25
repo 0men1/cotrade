@@ -25,7 +25,9 @@ export default function CollabStatus() {
 
             if (response.ok) {
                 const result = await response.json();
-                router.push(`${result.url}?isHost=true`)
+                action.createCollabRoom(result.roomId);
+                window.history.pushState({}, '', result.url);
+
             }
         } catch (error) {
             console.error("error: failed to parse response (", error, ")")
