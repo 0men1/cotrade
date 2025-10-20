@@ -75,21 +75,22 @@ export function useCandleChart(
         });
     }, [interval]);
 
-    const setupTickConnection = useCallback(async () => {
-        try {
-            if (connectionState?.status !== ConnectionStatus.CONNECTED) {
-                unsubscribeTickData.current = await subscribeToTicks(symbol, exchange, updateChart);
-                unsubscribeStatusListener.current = await subscribeToStatus(exchange, setConnectionState);
-
-                action.setChartConnectionStatus(ConnectionStatus.CONNECTED)
-            }
-        } catch (error) {
-            console.error("failed to fetch tick data: ", error)
-            action.setChartConnectionStatus(ConnectionStatus.ERROR)
-        }
-    }, [symbol, exchange])
 
     useEffect(() => {
+        const setupTickConnection = async () => {
+            try {
+                if (connectionState?.status !== ConnectionStatus.CONNECTED) {
+                    unsubscribeTickData.current = await subscribeToTicks(symbol, exchange, updateChart);
+                    unsubscribeStatusListener.current = await subscribeToStatus(exchange, setConnectionState);
+
+                    action.setChartConnectionStatus(ConnectionStatus.CONNECTED)
+                }
+            } catch (error) {
+                console.error("failed to fetch tick data: ", error)
+                action.setChartConnectionStatus(ConnectionStatus.ERROR)
+            }
+        }
+
         setupTickConnection();
         return () => {
             if (unsubscribeStatusListener.current) {
@@ -98,9 +99,10 @@ export function useCandleChart(
             if (unsubscribeTickData.current) {
                 unsubscribeTickData.current();
             }
+            setConnectionState(null)
             action.setChartConnectionStatus(ConnectionStatus.DISCONNECTED)
         }
-    }, [symbol, exchange, setupTickConnection])
+    }, [symbol, exchange, updateChart])
 
     useEffect(() => {
         candleCache.current.clear();

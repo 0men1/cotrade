@@ -70,6 +70,9 @@ export interface AppState {
     }
 }
 
+// export interface CollabAppState {
+// }
+
 export const defaultAppState: AppState = {
     lastSaved: "",
     collaboration: {
@@ -204,15 +207,15 @@ export const AppProvider: React.FC<{
                 }
 
                 wsRef.current.onclose = () => {
-                    console.log("Socket connection closed")
                     action.exitCollabRoom()
                     action.setCollabConnectionStatus(ConnectionStatus.DISCONNECTED)
+                    console.log("Socket connection closed")
                     // dispatch({ type: "END_LOADING", payload: null })
                 }
 
                 wsRef.current.onerror = (error: Event) => {
-                    console.log("socket connection error: ", error)
                     action.setCollabConnectionStatus(ConnectionStatus.ERROR)
+                    console.log("socket connection error: ", error)
                     // dispatch({ type: "END_LOADING", payload: null })
                 }
             }
@@ -312,6 +315,10 @@ export const AppProvider: React.FC<{
             },
 
             sendFullState: () => {
+                // I dont want to send the entire state
+                // const collabState = {
+                //     ...state.
+                // }
                 const act: Action = {
                     type: "SYNC_FULL_STATE",
                     payload: {

@@ -96,7 +96,6 @@ func GetCandles(w http.ResponseWriter, r *http.Request) {
 					Granularity: int(granularity),
 					Index:       index,
 				})
-
 				if err != nil {
 					log.Printf("Error fetching candles: %v", err)
 					http.Error(w, fmt.Sprintf("Failed to fetch candles: %v", err), http.StatusInternalServerError)

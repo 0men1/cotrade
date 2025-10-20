@@ -8,7 +8,6 @@ import Toolbox from './ToolBox';
 import CollabStatus from './CollabStatus';
 import { DrawingEditor } from './DrawingEditor';
 import Settings from './Settings';
-import { useChartInteractions } from './hooks/useChartInteractions';
 import { useChartDrawings } from './hooks/useChartDrawings';
 
 export interface ClientProps {
@@ -33,7 +32,6 @@ function ProvideConsumer() {
     useEffect(() => {
         if (chart && series && chartContainerRef.current) {
             action.initializeApi(chart, series, chartContainerRef.current);
-
         }
     }, [chart, series, chartContainerRef.current])
 
