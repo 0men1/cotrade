@@ -240,9 +240,6 @@ export class VerticalLineHandler implements BaseDrawingHandler {
 
             if (this._collectedPoints.length >= VerticalLineHandler.config.requiredPoints) {
                 const drawing = this.createDrawing(this._collectedPoints);
-                if (drawing) {
-                    this._series.attachPrimitive(drawing);
-                }
                 return drawing
             }
 

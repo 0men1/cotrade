@@ -44,7 +44,6 @@ export enum ConnectionStatus {
 
 export interface ConnectionState {
     status: ConnectionStatus;
-    exchange: string;
     reconnectAttempts: number;
     lastDataTime?: number;
     error?: string;

@@ -19,7 +19,6 @@ export const DrawingEditor: React.FC = () => {
     const handleDelete = async () => {
         if (!selected) return;
         action.deleteDrawing(selected)
-        selected.delete();
     }
 
     useEffect(() => {

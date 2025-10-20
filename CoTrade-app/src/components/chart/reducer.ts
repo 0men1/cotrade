@@ -1,5 +1,5 @@
 import { BaseDrawingHandler, DrawingTool, SerializedDrawing } from "@/core/chart/drawings/types";
-import { ConnectionStatus, ExchangeType, IntervalKey } from "@/core/chart/market-data/types";
+import { ConnectionState, ConnectionStatus, ExchangeType, IntervalKey } from "@/core/chart/market-data/types";
 import { BaseDrawing } from "@/core/chart/drawings/primitives/BaseDrawing";
 import { AppState, ChartSettings } from "./Context";
 import { IChartApi, ISeriesApi, SeriesType } from "lightweight-charts";
@@ -30,7 +30,7 @@ export type Action =
     | { type: "UPDATE_SETTINGS", payload: { settings: ChartSettings } }
     | { type: "CLEANUP_STATE", payload: null }
     | { type: "INITIALIZE_API", payload: { chartApi: IChartApi, seriesApi: ISeriesApi<SeriesType>, container: HTMLDivElement } }
-    | { type: "SET_CONNECTION_STATUS_CHART", payload: { status: ConnectionStatus } }
+    | { type: "SET_CONNECTION_STATE_CHART", payload: { state: ConnectionState } }
 
 
 function mergeDrawings(local: SerializedDrawing[], incoming: SerializedDrawing[]): SerializedDrawing[] {
@@ -82,14 +82,14 @@ export function deepMerge(target: any, source: any) {
 
 export function Reducer(state: AppState, action: Action): AppState {
     switch (action.type) {
-        case "SET_CONNECTION_STATUS_CHART": {
+        case "SET_CONNECTION_STATE_CHART": {
             return {
                 ...state,
                 chart: {
                     ...state.chart,
                     data: {
                         ...state.chart.data,
-                        status: action.payload.status
+                        state: action.payload.state
                     }
                 }
             }
@@ -220,7 +220,7 @@ export function Reducer(state: AppState, action: Action): AppState {
                     ...state.chart,
                     id: `${action.payload.symbol.toLowerCase()}:${action.payload.exchange.toLowerCase()}`,
                     drawings: {
-                        collection: [],
+                        ...state.chart.drawings,
                         selected: null,
                     },
                     data: {

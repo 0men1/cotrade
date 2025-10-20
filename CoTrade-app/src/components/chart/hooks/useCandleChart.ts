@@ -36,7 +36,9 @@ export function useCandleChart(
     const candleCache = useRef<Map<number, Candlestick>>(new Map());
     const currentCandle = useRef<Candlestick>(null);
     const lastTime = useRef<number>(0);
+
     const [connectionState, setConnectionState] = useState<ConnectionState | null>(null)
+
     const unsubscribeTickData = useRef<(() => void)>(null);
     const unsubscribeStatusListener = useRef<(() => void)>(null);
 
@@ -81,17 +83,18 @@ export function useCandleChart(
             try {
                 if (connectionState?.status !== ConnectionStatus.CONNECTED) {
                     unsubscribeTickData.current = await subscribeToTicks(symbol, exchange, updateChart);
-                    unsubscribeStatusListener.current = await subscribeToStatus(exchange, setConnectionState);
+                    unsubscribeStatusListener.current = await subscribeToStatus(exchange, action.setChartConnectionState);
 
-                    action.setChartConnectionStatus(ConnectionStatus.CONNECTED)
+                    action.setChartConnectionState({ status: ConnectionStatus.CONNECTED, reconnectAttempts: 0 })
                 }
             } catch (error) {
                 console.error("failed to fetch tick data: ", error)
-                action.setChartConnectionStatus(ConnectionStatus.ERROR)
+                action.setChartConnectionState({ status: ConnectionStatus.ERROR, reconnectAttempts: 0 })
             }
         }
 
         setupTickConnection();
+
         return () => {
             if (unsubscribeStatusListener.current) {
                 unsubscribeStatusListener.current();
@@ -99,8 +102,10 @@ export function useCandleChart(
             if (unsubscribeTickData.current) {
                 unsubscribeTickData.current();
             }
+
             setConnectionState(null)
-            action.setChartConnectionStatus(ConnectionStatus.DISCONNECTED)
+            action.setChartConnectionState({ status: ConnectionStatus.DISCONNECTED, reconnectAttempts: 0 })
+
         }
     }, [symbol, exchange, updateChart])
 

@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useMemo, useReducer, useRef } from "react";
 import { BaseDrawing } from "@/core/chart/drawings/primitives/BaseDrawing";
 import { DrawingTool, BaseDrawingHandler, SerializedDrawing } from "@/core/chart/drawings/types";
-import { ConnectionStatus, ExchangeType, IntervalKey } from "@/core/chart/market-data/types";
+import { ConnectionState, ConnectionStatus, ExchangeType, IntervalKey } from "@/core/chart/market-data/types";
 import { CrosshairMode, IChartApi, ISeriesApi, SeriesType } from "lightweight-charts";
 import { saveAppState } from "@/lib/localStorage";
 import { Action, deepMerge, Reducer } from "./Reducer";
@@ -65,7 +65,7 @@ export interface AppState {
             symbol: string;
             timeframe: IntervalKey;
             exchange: ExchangeType;
-            status: ConnectionStatus;
+            state: ConnectionState;
         };
     }
 }
@@ -125,7 +125,7 @@ export const defaultAppState: AppState = {
             symbol: "SOL-USD",
             timeframe: "1m",
             exchange: "coinbase",
-            status: ConnectionStatus.DISCONNECTED
+            state: { status: ConnectionStatus.DISCONNECTED, reconnectAttempts: 0 },
         },
         cursor: CrosshairMode.Normal,
     }
@@ -152,7 +152,7 @@ interface AppContextType {
         cancelTool: () => void;
 
         selectChart: (symbol: string, timeframe: IntervalKey, exchange: string) => void;
-        setChartConnectionStatus: (status: ConnectionStatus) => void;
+        setChartConnectionState: (state: ConnectionState) => void;
 
         initializeApi: (chartApi: IChartApi, seriesApi: ISeriesApi<SeriesType>, container: HTMLDivElement) => void;
         initializeDrawings: (drawings: SerializedDrawing[]) => void;
@@ -181,7 +181,6 @@ export const AppProvider: React.FC<{
             if (state.chart.tools.activeTool || state.chart.tools.activeHandler || state.chart.drawings.selected) {
                 return;
             }
-
             saveAppState(state);
         }, [state])
 
@@ -195,7 +194,7 @@ export const AppProvider: React.FC<{
 
                 wsRef.current.onopen = () => {
                     console.log("Socket connection open")
-                    action.joinCollabRoom({ roomId: id, displayName: state.collaboration.displayName })
+                    action.joinCollabRoom({ roomId: id, displayName: "Dummy1" })
                     action.setCollabConnectionStatus(ConnectionStatus.CONNECTED)
                     // dispatch({ type: "END_LOADING", payload: null })
                 }
@@ -315,10 +314,6 @@ export const AppProvider: React.FC<{
             },
 
             sendFullState: () => {
-                // I dont want to send the entire state
-                // const collabState = {
-                //     ...state.
-                // }
                 const act: Action = {
                     type: "SYNC_FULL_STATE",
                     payload: {
@@ -372,10 +367,10 @@ export const AppProvider: React.FC<{
                 wsRef.current?.send(JSON.stringify(act))
             },
 
-            setChartConnectionStatus: (status: ConnectionStatus) => {
+            setChartConnectionState: (state: ConnectionState) => {
                 const act: Action = {
-                    type: "SET_CONNECTION_STATUS_CHART",
-                    payload: { status }
+                    type: "SET_CONNECTION_STATE_CHART",
+                    payload: { state }
                 }
                 dispatch(act);
             },

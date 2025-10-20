@@ -208,9 +208,11 @@ export class TrendLineHandler implements BaseDrawingHandler {
 
             if (this._collectedPoints.length === TrendLineHandler.config.requiredPoints) {
                 const drawing = this.createDrawing(this._collectedPoints);
+                /*
                 if (drawing) {
                     this._series.attachPrimitive(drawing);
                 }
+                */
                 return drawing;
             }
 

@@ -20,7 +20,7 @@ function initDatabase(): Promise<IDBDatabase> {
             reject(request.error);
         }
 
-        request.onsuccess = (e: Event) => {
+        request.onsuccess = () => {
             db = request.result;
             resolve(db)
         }

@@ -1,13 +1,13 @@
 CURRENT TASK:
-Distinguish drawings made on different charts and render them correctly when switching between charts.
+- Fix sticky drawing issue
 
 Requirements
-- Handle errors gracefully and retry when fails 
-
+- Handle errors gracefully and retry when failing
 
 PROBLEM DISCOVERY:
-- Socket connections are frail
-- State syncs need to omit a few unnecessary and problematic attrs.
+- Drawings stick to the chart and do not get detached when deleted. Though, they are removed from the context and database
+- Collaborations disconnect when someone refreshes and they don't try to reconnect
+
 
 
 # 📈 CoTrade - Collaborative Financial Charting Platform

@@ -3,7 +3,7 @@ import { TrendLine } from "@/core/chart/drawings/primitives/TrendLine";
 import { VertLine } from "@/core/chart/drawings/primitives/VertLine";
 import { SerializedDrawing } from "@/core/chart/drawings/types";
 import { useApp } from "../Context";
-import { useCallback, useEffect, useInsertionEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { getDrawings, setDrawings } from "@/lib/indexdb";
 import { MouseEventParams } from "lightweight-charts";
 import { setCursor } from "@/core/chart/cursor";
@@ -12,7 +12,6 @@ import { setCursor } from "@/core/chart/cursor";
 /**
  * This hook will be solely responsible for drawing and removing and storing drawings
  */
-
 export function restoreDrawing(drawing: SerializedDrawing): BaseDrawing | null {
     try {
         let restoredDrawing: BaseDrawing | null = null;
@@ -34,14 +33,9 @@ export function restoreDrawing(drawing: SerializedDrawing): BaseDrawing | null {
     return null;
 }
 
-function recoverDrawingsFromDB(chartId: string): Promise<SerializedDrawing[]> {
-    const drawings = getDrawings(chartId);
-    return drawings;
-}
-
 export function useChartDrawings() {
     const { state, action } = useApp();
-    const { chartApi, seriesApi, container } = state.chart;
+    const { chartApi, seriesApi } = state.chart;
     const drawingsRef = useRef<Map<string, BaseDrawing>>(new Map());
     const isInitializedRef = useRef<string>(null);
 
@@ -51,30 +45,32 @@ export function useChartDrawings() {
         }
 
         const initializeDrawings = async () => {
-            const recoveredDrawings = await recoverDrawingsFromDB(state.chart.id);
+            const recoveredDrawings = await getDrawings(state.chart.id);
             action.initializeDrawings(recoveredDrawings);
             isInitializedRef.current = state.chart.id;
         }
 
         initializeDrawings();
-    }, [state.chart.id, action, seriesApi])
-
+    }, [state.chart.id, seriesApi, action])
 
     useEffect(() => {
         if (!seriesApi || !isInitializedRef.current || isInitializedRef.current !== state.chart.id) {
             return
         }
 
+        console.log('=== DRAWING SYNC EFFECT ===');
+        console.log('Chart ID:', state.chart.id);
+        console.log('Drawings in state:', state.chart.drawings.collection.length);
+        console.log('Drawings:', state.chart.drawings.collection);
+
         const currentDrawings = drawingsRef.current;
         const serializedDrawings = state.chart.drawings.collection;
-
 
         for (const drawing of currentDrawings.values()) {
             try {
                 seriesApi.detachPrimitive(drawing);
             } catch (error) {
-                console.error("failed to detch drawing: ", error)
-                return;
+                console.error("failed to detach drawing: ", error);
             }
         }
 
@@ -83,11 +79,17 @@ export function useChartDrawings() {
         for (const drawing of serializedDrawings) {
             const restoredDrawing = restoreDrawing(drawing);
             if (restoredDrawing) {
+                console.log('Attaching drawing:', drawing.id);
                 seriesApi.attachPrimitive(restoredDrawing);
                 currentDrawings.set(drawing.id, restoredDrawing);
+            } else {
+                console.error('Failed to restore drawing:', drawing);
             }
         }
 
+        return () => {
+            currentDrawings.clear();
+        }
     }, [state.chart.drawings.collection, seriesApi, state.chart.id])
 
     useEffect(() => {

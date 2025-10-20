@@ -25,7 +25,7 @@ function Toolbox() {
         return () => {
             window.removeEventListener("keydown", handleEscape);
         }
-    }, [activeTool, action]);
+    }, [activeTool]);
 
     function setTool(tool: DrawingTool) {
         if (!chartApi || !seriesApi) return;

@@ -15,7 +15,7 @@ export interface ClientProps {
     initialState?: Partial<AppState>;
 }
 
-export default function ClientChart({ roomId, initialState }: ClientProps) {
+export default function ClientChart({ initialState }: ClientProps) {
     return (
         <AppProvider initialState={initialState}>
             <ProvideConsumer />
@@ -48,7 +48,7 @@ function ProvideConsumer() {
         return () => {
             window.removeEventListener('beforeunload', cleanup);
         };
-    }, [action]);
+    }, []);
 
     // Show loading UI for collaborative mode
     if (isLoading && id) {

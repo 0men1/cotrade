@@ -13,15 +13,15 @@ export abstract class ExchangeAdapter {
 
     constructor(protected config: ExchangeConfig) { }
 
-    abstract formatSubscribeMessage(symbols: string[]): any;
-    abstract formatUnsubscribeMessage(symbols: string[]): any;
+    abstract formatSubscribeMessage(symbols: string[]): object;
+    abstract formatUnsubscribeMessage(symbols: string[]): object;
     abstract parseTickerMessage(data: any): TickData | null;
 
     connect(): void {
         if (this.isManuallyDisconnected) return;
 
         this.cleanup();
-        this.notifyStatus({ status: ConnectionStatus.CONNECTING })
+        this.notifyState(ConnectionStatus.CONNECTING)
 
         try {
             this.ws = new WebSocket(this.config.wsUrl);
@@ -36,7 +36,7 @@ export abstract class ExchangeAdapter {
         this.cleanup();
         this.ws?.close();
         this.ws = null;
-        this.notifyStatus({ status: ConnectionStatus.DISCONNECTED });
+        this.notifyState(ConnectionStatus.DISCONNECTED);
     }
 
     subscribe(symbol: string, onTick: (data: TickData) => void): () => void {
@@ -71,7 +71,7 @@ export abstract class ExchangeAdapter {
 
         this.ws.onopen = () => {
             this.reconnectAttempts = 0;
-            this.notifyStatus({ status: ConnectionStatus.CONNECTED });
+            this.notifyState(ConnectionStatus.CONNECTED);
 
             const symbols = Array.from(this.subscriptions.keys());
             if (symbols.length > 0) {
@@ -133,7 +133,7 @@ export abstract class ExchangeAdapter {
         }
 
         this.reconnectAttempts++;
-        this.notifyStatus({ status: ConnectionStatus.RECONNECTING });
+        this.notifyState(ConnectionStatus.RECONNECTING);
 
         const initialDelay = this.config.reconnectConfig?.initialDelay ?? 10;
         const maxDelay = this.config.reconnectConfig?.maxDelay ?? 30000;
@@ -150,17 +150,17 @@ export abstract class ExchangeAdapter {
     }
 
     private handleError(error: string): void {
-        this.notifyStatus({ status: ConnectionStatus.ERROR, error })
+        this.notifyState(ConnectionStatus.ERROR, error)
     }
 
-    private notifyStatus(status: Partial<ConnectionState>): void {
-        const fullStatus: ConnectionState = {
-            status: ConnectionStatus.DISCONNECTED,
+    private notifyState(status: ConnectionStatus, error?: string): void {
+        const fullState: ConnectionState = {
+            status,
+            error: error,
             exchange: this.config.name,
             reconnectAttempts: this.reconnectAttempts,
-            ...status
         };
-        this.stateListeners.forEach(listener => listener(fullStatus))
+        this.stateListeners.forEach(listener => listener(fullState))
     }
 
     destroy(): void {
