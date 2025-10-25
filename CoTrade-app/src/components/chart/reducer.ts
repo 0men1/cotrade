@@ -10,7 +10,7 @@ export type Action =
     | { type: "USER_JOINED", payload: { displayName: string } }
     | { type: "USER_LEFT", payload: { displayName: string } }
     | { type: "SYNC_FULL_STATE", payload: { state: AppState } }
-    | { type: "JOIN_COLLAB_ROOM", payload: { room: { roomId: string | null, displayName: string } } }
+    | { type: "JOIN_COLLAB_ROOM", payload: { roomId: string | null } }
     | { type: "LEAVE_COLLAB_ROOM", payload: null }
     | { type: "END_LOADING", payload: null }
     | { type: "SET_CONNECTION_STATUS_COLLAB", payload: { status: ConnectionStatus } }
@@ -213,7 +213,11 @@ export function Reducer(state: AppState, action: Action): AppState {
         }
 
         case "SELECT_CHART": {
-            state.chart.tools.activeHandler?.onCancel()
+            try {
+                state.chart.tools.activeHandler?.onCancel()
+            } catch (e) {
+                console.log(e)
+            }
             return {
                 ...state,
                 chart: {
@@ -288,10 +292,9 @@ export function Reducer(state: AppState, action: Action): AppState {
                 ...state,
                 collaboration: {
                     ...state.collaboration,
-                    displayName: action.payload.room.displayName,
                     room: {
                         ...state.collaboration.room,
-                        id: action.payload.room.roomId,
+                        id: action.payload.roomId,
                     }
                 }
             }
@@ -354,7 +357,6 @@ export function Reducer(state: AppState, action: Action): AppState {
                 collaboration: {
                     ...state.collaboration,
                     isOpen: false,
-                    displayName: "solo_user",
                     room: {
                         ...state.collaboration.room,
                         id: null,

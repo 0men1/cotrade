@@ -99,7 +99,7 @@ export default function ChartHeader() {
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <span>Candle Data:</span>
-                                    {getStatusDiv(state.chart.data.status)}
+                                    {getStatusDiv(state.chart.data.state.status)}
                                 </div>
                             </div>
                         </div>

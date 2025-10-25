@@ -245,6 +245,7 @@ export function useCandleChart(
 
     }, [
         symbol,
+        exchange,
         timeframe,
         safeCleanup,
         loadHistoricalCandles,

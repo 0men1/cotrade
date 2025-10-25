@@ -15,15 +15,15 @@ export interface ClientProps {
     initialState?: Partial<AppState>;
 }
 
-export default function ClientChart({ initialState }: ClientProps) {
+export default function ClientChart({ roomId, initialState }: ClientProps) {
     return (
         <AppProvider initialState={initialState}>
-            <ProvideConsumer />
+            <ProvideConsumer roomId={roomId} />
         </AppProvider>
     );
 }
 
-function ProvideConsumer() {
+function ProvideConsumer({ roomId }: { roomId?: string }) {
     const chartContainerRef = useRef<HTMLDivElement>(null);
     const { chart, series } = useCandleChart(chartContainerRef);
     const { state, action } = useApp();
@@ -35,9 +35,12 @@ function ProvideConsumer() {
         }
     }, [chart, series, chartContainerRef.current])
 
+    if (roomId != null) {
+        action.joinCollabRoom(roomId)
+    }
+
     // useChartInteractions()
     useChartDrawings();
-
     const { isLoading, id } = state.collaboration.room;
 
     useEffect(() => {
@@ -51,6 +54,7 @@ function ProvideConsumer() {
     }, []);
 
     // Show loading UI for collaborative mode
+    //
     if (isLoading && id) {
         return (
             <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-800 justify-center items-center">

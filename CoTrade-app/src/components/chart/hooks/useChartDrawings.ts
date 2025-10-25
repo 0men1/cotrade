@@ -8,7 +8,6 @@ import { getDrawings, setDrawings } from "@/lib/indexdb";
 import { MouseEventParams } from "lightweight-charts";
 import { setCursor } from "@/core/chart/cursor";
 
-
 /**
  * This hook will be solely responsible for drawing and removing and storing drawings
  */
@@ -44,13 +43,17 @@ export function useChartDrawings() {
             return;
         }
 
-        const initializeDrawings = async () => {
-            const recoveredDrawings = await getDrawings(state.chart.id);
-            action.initializeDrawings(recoveredDrawings);
-            isInitializedRef.current = state.chart.id;
+        try {
+            const initializeDrawings = async () => {
+                const recoveredDrawings = await getDrawings(state.chart.id);
+                action.initializeDrawings(recoveredDrawings);
+                isInitializedRef.current = state.chart.id;
+            }
+            initializeDrawings();
+        } catch (e) {
+            console.error(e)
         }
 
-        initializeDrawings();
     }, [state.chart.id, seriesApi, action])
 
     useEffect(() => {
@@ -61,34 +64,34 @@ export function useChartDrawings() {
         console.log('=== DRAWING SYNC EFFECT ===');
         console.log('Chart ID:', state.chart.id);
         console.log('Drawings in state:', state.chart.drawings.collection.length);
-        console.log('Drawings:', state.chart.drawings.collection);
 
         const currentDrawings = drawingsRef.current;
         const serializedDrawings = state.chart.drawings.collection;
+        const stateIds = new Set(serializedDrawings.map(d => d.id));
 
-        for (const drawing of currentDrawings.values()) {
-            try {
+        // Step 1: Remove drawings that are no longer in state
+        for (const [id, drawing] of Array.from(currentDrawings.entries())) {
+            if (!stateIds.has(id)) {
+                console.log("Detaching removed drawing:", id);
                 seriesApi.detachPrimitive(drawing);
-            } catch (error) {
-                console.error("failed to detach drawing: ", error);
+                currentDrawings.delete(id);
             }
         }
 
-        currentDrawings.clear();
-
+        // Step 2: Add new drawings that aren't in the ref yet
         for (const drawing of serializedDrawings) {
-            const restoredDrawing = restoreDrawing(drawing);
-            if (restoredDrawing) {
-                console.log('Attaching drawing:', drawing.id);
-                seriesApi.attachPrimitive(restoredDrawing);
-                currentDrawings.set(drawing.id, restoredDrawing);
-            } else {
-                console.error('Failed to restore drawing:', drawing);
+            if (!currentDrawings.has(drawing.id)) {
+                const restoredDrawing = restoreDrawing(drawing);
+                if (restoredDrawing) {
+                    console.log('Attaching new drawing:', drawing.id);
+                    seriesApi.attachPrimitive(restoredDrawing);
+                    currentDrawings.set(drawing.id, restoredDrawing);
+                }
             }
         }
 
         return () => {
-            currentDrawings.clear();
+            currentDrawings.clear()
         }
     }, [state.chart.drawings.collection, seriesApi, state.chart.id])
 
@@ -97,48 +100,58 @@ export function useChartDrawings() {
         setDrawings(state.chart.id, state.chart.drawings.collection);
     }, [state.chart.drawings.collection, state.chart.id])
 
-    const mosueClickHandler = useCallback((param: MouseEventParams) => {
-        if (!param.point || !param.logical) return;
+    const mouseClickHandler = useCallback((param: MouseEventParams) => {
+        try {
+            if (!param.point || !param.logical) return;
 
-        const { tools, drawings } = state.chart;
-        if (tools.activeHandler) {
-            const drawing = tools.activeHandler.onClick(param.point.x, param.point.y);
-            if (drawing) {
-                action.addDrawing(drawing);
-            }
-        } else {
-            const hoveredDrawingId = param.hoveredObjectId as string;
-            const drawing = drawingsRef.current.get(hoveredDrawingId);
-            if (drawing) {
-                if (drawings.selected && drawing.id !== drawings.selected.id) {
-                    drawingsRef.current.get(drawings.selected.id)?.setSelected(false);
+            const { tools, drawings } = state.chart;
+            if (tools.activeHandler) {
+                const drawing = tools.activeHandler.onClick(param.point.x, param.point.y);
+                if (drawing) {
+                    action.addDrawing(drawing);
                 }
-                drawing.setSelected(true);
-                action.selectDrawing(drawing);
-            } else if (drawings.selected) {
-                drawingsRef.current.get(drawings.selected.id)?.setSelected(false);
-                action.selectDrawing(null);
+            } else {
+                const hoveredDrawingId = param.hoveredObjectId as string;
+                const drawing = drawingsRef.current.get(hoveredDrawingId);
+                if (drawing) {
+                    if (drawings.selected && drawing.id !== drawings.selected.id) {
+                        drawingsRef.current.get(drawings.selected.id)?.setSelected(false);
+                    }
+                    drawing.setSelected(true);
+                    action.selectDrawing(drawing);
+                } else if (drawings.selected) {
+                    drawingsRef.current.get(drawings.selected.id)?.setSelected(false);
+                    action.selectDrawing(null);
+                }
             }
+        } catch (e) {
+            console.error(e)
         }
     }, [state.chart.tools.activeHandler, state.chart.drawings, action])
 
-
     const mouseMoveHandler = useCallback((param: MouseEventParams) => {
-        if (!param.point || !param.logical) return;
+        try {
+            if (!param.point || !param.logical) return;
 
-        const hoveredDrawingId = param.hoveredObjectId as string;
-        const drawing = drawingsRef.current.get(hoveredDrawingId);
-        setCursor(drawing ? 'pointer' : 'default')
+            const hoveredDrawingId = param.hoveredObjectId as string;
+            const drawing = drawingsRef.current.get(hoveredDrawingId);
+            setCursor(drawing ? 'pointer' : 'default')
+        } catch (e) {
+            console.error(e)
+        }
     }, [])
 
     useEffect(() => {
-        chartApi?.subscribeClick(mosueClickHandler);
+        chartApi?.subscribeClick(mouseClickHandler);
         chartApi?.subscribeCrosshairMove(mouseMoveHandler);
 
         return () => {
-            chartApi?.unsubscribeClick(mosueClickHandler);
-            chartApi?.unsubscribeCrosshairMove(mouseMoveHandler);
-
+            try {
+                chartApi?.unsubscribeClick(mouseClickHandler);
+                chartApi?.unsubscribeCrosshairMove(mouseMoveHandler);
+            } catch (error) {
+                console.error('Error during event cleanup (likely disposed chart):', error);
+            }
         }
-    }, [chartApi, mosueClickHandler, mouseMoveHandler])
+    }, [chartApi, mouseClickHandler, mouseMoveHandler])
 }

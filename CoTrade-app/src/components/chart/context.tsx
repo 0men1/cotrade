@@ -36,7 +36,6 @@ export interface AppState {
     lastSaved: string,
     collaboration: {
         isOpen: boolean;
-        displayName: string,
         room: {
             id: string | null,
             isHost: boolean,
@@ -77,7 +76,6 @@ export const defaultAppState: AppState = {
     lastSaved: "",
     collaboration: {
         isOpen: false,
-        displayName: "solo_user",
         room: {
             id: null,
             isLoading: false,
@@ -139,7 +137,7 @@ interface AppContextType {
         selectDrawing: (drawing: BaseDrawing | null) => void;
 
         createCollabRoom: (roomId: string) => void;
-        joinCollabRoom: (room: { roomId: string, displayName: string }) => void;
+        joinCollabRoom: (roomId: string) => void;
         exitCollabRoom: () => void;
         userJoined: (displayName: string) => void;
         userLeft: (displayName: string) => void;
@@ -188,15 +186,19 @@ export const AppProvider: React.FC<{
             const { id } = state.collaboration.room
 
             if (id && !wsRef.current) {
-                const roomUrl = `localhost:8080/rooms/join?roomId=${id}&displayName=${state.collaboration.displayName}`
+
+                // Link to the room to connect
+                const roomUrl = `localhost:8080/rooms/join?roomId=${id}`
 
                 wsRef.current = new WebSocket(`ws://${roomUrl}`);
 
+                console.log(`Connecting to room ${id}`)
+
                 wsRef.current.onopen = () => {
                     console.log("Socket connection open")
-                    action.joinCollabRoom({ roomId: id, displayName: "Dummy1" })
+                    action.joinCollabRoom(id)
                     action.setCollabConnectionStatus(ConnectionStatus.CONNECTED)
-                    // dispatch({ type: "END_LOADING", payload: null })
+                    dispatch({ type: "END_LOADING", payload: null })
                 }
 
                 wsRef.current.onmessage = (event: MessageEvent) => {
@@ -209,13 +211,13 @@ export const AppProvider: React.FC<{
                     action.exitCollabRoom()
                     action.setCollabConnectionStatus(ConnectionStatus.DISCONNECTED)
                     console.log("Socket connection closed")
-                    // dispatch({ type: "END_LOADING", payload: null })
+                    dispatch({ type: "END_LOADING", payload: null })
                 }
 
                 wsRef.current.onerror = (error: Event) => {
                     action.setCollabConnectionStatus(ConnectionStatus.ERROR)
                     console.log("socket connection error: ", error)
-                    // dispatch({ type: "END_LOADING", payload: null })
+                    dispatch({ type: "END_LOADING", payload: null })
                 }
             }
 
@@ -268,7 +270,6 @@ export const AppProvider: React.FC<{
             },
 
 
-
             // ----------------COLLAB FUNCTIONS-------------------
             createCollabRoom: (roomId: string) => {
                 const act: Action = {
@@ -304,8 +305,8 @@ export const AppProvider: React.FC<{
                 dispatch({ type: "TOGGLE_COLLAB_WINDOW", payload: { state } })
             },
 
-            joinCollabRoom: (room: { roomId: string, displayName: string }) => {
-                dispatch({ type: "JOIN_COLLAB_ROOM", payload: { room } })
+            joinCollabRoom: (roomId: string) => {
+                dispatch({ type: "JOIN_COLLAB_ROOM", payload: { roomId } })
             },
 
             exitCollabRoom: () => {

@@ -16,7 +16,7 @@ export interface EditableOption {
     key: string;
     label: string;
     type: EditableOptionType;
-    currentValue?: string | number;
+    currentValue?: string | number | boolean;
 }
 
 export interface SerializedDrawing {

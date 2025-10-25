@@ -19,6 +19,8 @@ export default function ChartCollabRoom(
             return;
         }
 
+        console.log("Starting Collab chart")
+
         setInitialState(getInitialState());
         setIsLoaded(true);
     }, [roomId])

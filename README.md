@@ -1,15 +1,19 @@
 CURRENT TASK:
-- Fix sticky drawing issue
+- Fix sticky drawing issue 
+   - Fixed sticky drawing issue but brought back object is disposed but now object isnt getting disposed so idk what is disposed that is being invoked...
+
 
 Requirements
+- The drawing system is terrible and can be greatly improved. I am planning on forking LWC and creating my own implementation that opens the door to dragging drawings and their control points instead of declaring it here. So the drawing is very very temporary just to make sure everything works.
 - Handle errors gracefully and retry when failing
 
 PROBLEM DISCOVERY:
 - Drawings stick to the chart and do not get detached when deleted. Though, they are removed from the context and database
 - Collaborations disconnect when someone refreshes and they don't try to reconnect
+- Switching to a nodejs websocket implementation would be better?
 
 
-
+===THIS IS AI GENERATED===
 # 📈 CoTrade - Collaborative Financial Charting Platform
 
 <div align="center">
